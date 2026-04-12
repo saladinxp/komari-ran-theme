@@ -1,0 +1,25 @@
+# deps
+node_modules/
+
+# logs
+*.log
+npm-debug.log*
+
+# env
+.env
+.env.local
+.env.*.local
+
+# editor
+.vscode/
+.idea/
+.DS_Store
+
+# tsbuild caches
+*.tsbuildinfo
+node_modules/.tmp/
+
+# vite
+vite.config.ts.timestamp-*
+
+# keep dist tracked — it's the deliverable for Komari

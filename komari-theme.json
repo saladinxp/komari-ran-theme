@@ -1,0 +1,38 @@
+{
+  "$schema": "https://komari.ai/schema/theme.schema.json",
+  "name": "Ran",
+  "short": "岚",
+  "version": "0.1.0",
+  "author": "Miuler",
+  "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
+  "preview": "preview.png",
+  "repository": "https://github.com/saladinxp/komari-ran-theme",
+  "homepage": "https://lol.moe",
+  "configuration": [
+    {
+      "key": "version_tag",
+      "type": "string",
+      "default": "0.1.0",
+      "title": "版本号 (Version Tag)",
+      "description": "当前主题版本号,用于显示在页脚"
+    },
+    {
+      "key": "default_theme",
+      "type": "select",
+      "default": "ran-night",
+      "title": "默认主题 (Default Theme)",
+      "description": "页面首次加载时的默认主题",
+      "options": [
+        { "label": "墨石 (Night)", "value": "ran-night" },
+        { "label": "雾色 (Mist)", "value": "ran-mist" }
+      ]
+    },
+    {
+      "key": "site_name",
+      "type": "string",
+      "default": "岚 · Komari Probe",
+      "title": "站点名称 (Site Name)",
+      "description": "顶部显示的站点名称"
+    }
+  ]
+}

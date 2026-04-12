@@ -1,0 +1,332 @@
+/* ============================================================
+   岚 / Ran — Komari Probe Theme
+   Design tokens. Inspired by precision-machined hi-fi gear:
+   stepped chamfered edges, etched serial plates, sunken displays,
+   true 1px hairlines. No glow, no scanlines, no spectacle.
+   Two themes: ran-night (graphite-deep) and ran-mist (porcelain).
+   ============================================================ */
+
+:root {
+  /* Type stacks */
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-sans: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Inter Tight', 'Inter', sans-serif;
+
+  /* Type scale (px) */
+  --t-micro: 9px;
+  --t-mini: 10px;
+  --t-small: 11px;
+  --t-body: 13px;
+  --t-h4: 15px;
+  --t-h3: 18px;
+  --t-h2: 24px;
+  --t-h1: 32px;
+  --t-display: 56px;
+
+  --tracking-wide: 0.14em;
+  --tracking-mid: 0.06em;
+  --tracking-tight: -0.02em;
+
+  /* Geometry */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+
+  /* Spacing scale (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+
+  --hairline: 1px;
+}
+
+/* ── ran-night (deep) ─────────────────────────────────────── */
+[data-theme='ran-night'] {
+  --bg-0: #0c0d0f;
+  --bg-1: #14161a;
+  --bg-2: #1a1d22;
+  --bg-3: #21252b;
+  --bg-4: #2a2f36;
+  --bg-inset: #0a0b0d;
+
+  --fg-0: #e8e6e1;
+  --fg-1: #b8b3a8;
+  --fg-2: #7a7468;
+  --fg-3: #4a463e;
+  --fg-mark: #fafaf8;
+
+  /* Edges — outer bright (top light) + inner deep (recessed) = chamfer */
+  --edge-bright: rgba(255, 248, 230, 0.09);
+  --edge-mid: rgba(255, 248, 230, 0.05);
+  --edge-deep: rgba(0, 0, 0, 0.55);
+  --edge-engrave: rgba(0, 0, 0, 0.40);
+
+  /* Accent — restrained warm copper-gold */
+  --accent: #c28840;
+  --accent-dim: #8a5f2c;
+  --accent-bright: #e0a55a;
+
+  --signal-good: #6db485;
+  --signal-warn: #d9a154;
+  --signal-bad: #c85a4f;
+  --signal-info: #6b8db5;
+
+  --shadow-card:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-inset:
+    inset 0 1px 0 var(--edge-deep),
+    inset 0 -1px 0 var(--edge-bright),
+    inset 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-button:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 2px rgba(0, 0, 0, 0.4);
+
+  --grid-line: rgba(255, 248, 230, 0.025);
+  --grid-line-strong: rgba(255, 248, 230, 0.05);
+}
+
+/* ── ran-mist (porcelain) ─────────────────────────────────── */
+[data-theme='ran-mist'] {
+  --bg-0: #f0e9dc;
+  --bg-1: #f6efe2;
+  --bg-2: #fbf5e9;
+  --bg-3: #fffaf0;
+  --bg-4: #fffdf6;
+  --bg-inset: #e2d9c5;
+
+  --fg-0: #1a1815;
+  --fg-1: #4a463d;
+  --fg-2: #76705f;
+  --fg-3: #a8a190;
+  --fg-mark: #000000;
+
+  --edge-bright: rgba(255, 255, 255, 0.9);
+  --edge-mid: rgba(255, 255, 255, 0.5);
+  --edge-deep: rgba(50, 40, 25, 0.18);
+  --edge-engrave: rgba(50, 40, 25, 0.12);
+
+  --accent: #a06820;
+  --accent-dim: #7a4f18;
+  --accent-bright: #c28840;
+
+  --signal-good: #4a8a64;
+  --signal-warn: #b07820;
+  --signal-bad: #a83a30;
+  --signal-info: #4a6b90;
+
+  --shadow-card:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 3px rgba(50, 40, 25, 0.08);
+  --shadow-inset:
+    inset 0 1px 0 var(--edge-deep),
+    inset 0 -1px 0 var(--edge-bright),
+    inset 0 1px 3px rgba(50, 40, 25, 0.12);
+  --shadow-button:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 2px rgba(50, 40, 25, 0.1);
+
+  --grid-line: rgba(50, 40, 25, 0.04);
+  --grid-line-strong: rgba(50, 40, 25, 0.08);
+}
+
+/* ─── Base ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  color: var(--fg-0);
+  background: var(--bg-0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'ss01', 'cv11';
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Reusable atoms */
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum', 'zero';
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.uppercase-mid {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-mid);
+}
+
+.uppercase-wide {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Etched / engraved label */
+.etch {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-3);
+  font-weight: 500;
+}
+
+/* Precision card — outer chamfer + inner stroke */
+.precision-card {
+  background: var(--bg-2);
+  border: var(--hairline) solid var(--edge-mid);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  position: relative;
+}
+
+/* Sunken display — for screens, charts, value readouts */
+.precision-inset {
+  background: var(--bg-inset);
+  border: var(--hairline) solid var(--edge-engrave);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-inset);
+}
+
+/* The double-stroke effect — outer bright, inner deep */
+.machined-edge {
+  position: relative;
+  border-radius: var(--radius-md);
+}
+
+.machined-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: var(--hairline) solid var(--edge-bright);
+  pointer-events: none;
+}
+
+.machined-edge::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--radius-md) - 1px);
+  border: var(--hairline) solid var(--edge-deep);
+  pointer-events: none;
+}
+
+/* Tick scale — vertical or horizontal ruler */
+.tick-scale {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--fg-3) 0,
+    var(--fg-3) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+  height: 6px;
+  opacity: 0.5;
+}
+
+/* Hardware seam — subtle horizontal divider with center cap */
+.seam {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    var(--edge-deep) 8px,
+    var(--edge-deep) calc(100% - 8px),
+    transparent 100%
+  );
+  border-bottom: 1px solid var(--edge-bright);
+}
+
+/* Scrollbar — subtle */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border: 2px solid var(--bg-1);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-4);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--fg-mark);
+}
+
+/* ─── Animations (GPU-composited, ~free) ───────────────────── */
+@keyframes ran-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes ran-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes ran-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
