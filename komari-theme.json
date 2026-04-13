@@ -2,7 +2,7 @@
   "$schema": "https://komari.ai/schema/theme.schema.json",
   "name": "Ran",
   "short": "岚",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Miuler",
   "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
   "preview": "preview.png",
@@ -12,7 +12,7 @@
     {
       "key": "version_tag",
       "type": "string",
-      "default": "0.1.0",
+      "default": "0.2.0",
       "title": "版本号 (Version Tag)",
       "description": "当前主题版本号,用于显示在页脚"
     },

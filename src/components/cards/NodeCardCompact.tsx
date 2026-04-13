@@ -2,7 +2,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { Sparkline } from '@/components/charts/Sparkline'
 import type { KomariNode, KomariRecord, NodeStatus } from '@/types/komari'
-import { formatBps, formatBytes, formatPercent, formatUptimeShort, parseLabels, daysUntil, deriveStatus, resolveRamPercent } from '@/utils/format'
+import { formatBps, formatBytes, formatPercent, formatUptimeShort, parseLabels, daysUntil } from '@/utils/format'
 
 interface Props {
   node: KomariNode
@@ -15,6 +15,12 @@ const COLOR_BY_STATUS: Record<NodeStatus, string> = {
   good: 'var(--signal-good)',
   warn: 'var(--signal-warn)',
   bad: 'var(--signal-bad)',
+}
+
+function deriveStatus(r?: KomariRecord): NodeStatus {
+  if (!r || r.online === false) return 'bad'
+  if ((r.cpu ?? 0) > 80 || (r.loss ?? 0) > 5) return 'warn'
+  return 'good'
 }
 
 /** Block meter — segmented bar with subtle glow on filled blocks. */
@@ -55,10 +61,7 @@ function MetricCell({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <Etch>{label}</Etch>
-        <span
-          className="mono tnum"
-          style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}
-        >
+        <span className="mono tnum" style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}>
           {percent != null ? Math.round(percent) : '—'}
           <span style={{ fontSize: 9, color: 'var(--fg-2)', marginLeft: 1 }}>%</span>
         </span>
@@ -73,6 +76,7 @@ function MetricCell({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}
+          title={sub}
         >
           {sub}
         </span>
@@ -83,18 +87,24 @@ function MetricCell({
 }
 
 export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }: Props) {
-  const status: NodeStatus = deriveStatus(record)
+  const status = deriveStatus(record)
+  const offline = status === 'bad'
   const statusColor = COLOR_BY_STATUS[status]
   const labels = parseLabels(node.tags)
-  const ramPct = resolveRamPercent(record?.ram, record?.ram_total)
-  // disk in Komari is already a percent (0..100). disk_total is bytes for display.
-  const diskPct = record?.disk
-  const diskUsedBytes =
-    record?.disk_total != null && diskPct != null
-      ? record.disk_total * (diskPct / 100)
+
+  // mem percent: prefer used/total, else direct cpu... no, only mem
+  const memPct =
+    record?.memory_used != null && record.memory_total
+      ? (record.memory_used / record.memory_total) * 100
       : undefined
+
+  const diskPct =
+    record?.disk_used != null && record.disk_total
+      ? (record.disk_used / record.disk_total) * 100
+      : undefined
+
   const days = daysUntil(node.expired_at)
-  const offline = status === 'bad'
+  const cpuModel = record?.cpu_model || node.cpu_name || node.cpu_model
 
   return (
     <div
@@ -106,13 +116,14 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
         gap: 9,
         position: 'relative',
         overflow: 'hidden',
+        opacity: offline ? 0.7 : 1,
       }}
     >
       {/* header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {node.flag && (
+            {node.region && (
               <span
                 style={{
                   fontSize: 9,
@@ -121,7 +132,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
                   letterSpacing: '0.12em',
                 }}
               >
-                {node.flag}
+                {node.region}
               </span>
             )}
             <span
@@ -134,12 +145,12 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
-              title={node.name}
+              title={node.name ?? node.uuid}
             >
-              {node.name}
+              {node.name ?? node.uuid.slice(0, 8)}
             </span>
           </div>
-          {node.os && (
+          {(record?.os || node.os) && (
             <span
               style={{
                 fontSize: 9.5,
@@ -150,17 +161,15 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
               }}
-              title={node.os}
+              title={record?.os ?? node.os}
             >
-              {node.os}
+              {record?.os ?? node.os}
             </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <StatusDot status={status} size={6} pulse={status === 'good'} />
-          <Etch>
-            {status === 'good' ? 'ONLINE' : status === 'warn' ? 'DEGRADED' : 'OFFLINE'}
-          </Etch>
+          <Etch>{status === 'good' ? 'ONLINE' : status === 'warn' ? 'DEGRADED' : 'OFFLINE'}</Etch>
         </div>
       </div>
 
@@ -171,17 +180,17 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
         <MetricCell
           label="CPU"
           percent={offline ? undefined : record?.cpu}
-          sub={`${node.cpu_cores ?? '—'} 核`}
+          sub={cpuModel ?? `${node.cpu_cores ?? '—'} 核`}
           color="var(--signal-info)"
         />
         <MetricCell
           label="内存"
-          percent={offline ? undefined : ramPct}
+          percent={offline ? undefined : memPct}
           sub={
             offline
               ? '—'
-              : record?.ram != null && record?.ram_total
-                ? `${formatBytes(record.ram > 100 ? record.ram : (record.ram / 100) * record.ram_total)} / ${formatBytes(record.ram_total)}`
+              : record?.memory_total
+                ? `${formatBytes(record.memory_used)} / ${formatBytes(record.memory_total)}`
                 : undefined
           }
           color="var(--accent)"
@@ -197,7 +206,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
             offline
               ? '—'
               : record?.disk_total
-                ? `${formatBytes(diskUsedBytes)} / ${formatBytes(record.disk_total)}`
+                ? `${formatBytes(record.disk_used)} / ${formatBytes(record.disk_total)}`
                 : undefined
           }
           color="var(--signal-warn)"
@@ -205,26 +214,16 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <Etch>负载</Etch>
-            <span
-              className="mono tnum"
-              style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}
-            >
-              {offline ? '—' : record?.load != null ? record.load.toFixed(2) : '—'}
+            <span className="mono tnum" style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}>
+              {offline ? '—' : record?.load1 != null ? record.load1.toFixed(2) : '—'}
             </span>
           </div>
-          <span
-            style={{
-              fontSize: 10,
-              color: 'var(--fg-2)',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            1m / 5m / 15m
+          <span style={{ fontSize: 10, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
+            {offline
+              ? '1m / 5m / 15m'
+              : `${(record?.load1 ?? 0).toFixed(2)} / ${(record?.load5 ?? 0).toFixed(2)} / ${(record?.load15 ?? 0).toFixed(2)}`}
           </span>
-          <BlockMeter
-            value={offline ? 0 : Math.min(100, (record?.load ?? 0) * 30)}
-            color="var(--signal-good)"
-          />
+          <BlockMeter value={offline ? 0 : Math.min(100, (record?.load1 ?? 0) * 30)} color="var(--signal-good)" />
         </div>
       </div>
 
@@ -234,34 +233,18 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span
-              style={{
-                fontSize: 11,
-                color: 'var(--accent-bright)',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
-              ↑ 上行
-            </span>
+            <span style={{ fontSize: 11, color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>↑ 上行</span>
             <span className="mono tnum" style={{ fontSize: 11, color: 'var(--fg-0)' }}>
-              {formatBps(record?.net_out)}
+              {formatBps(record?.network_tx)}
             </span>
           </div>
           <Sparkline data={netSpark} width={150} height={14} color="var(--accent)" thickness={1} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span
-              style={{
-                fontSize: 11,
-                color: 'var(--signal-good)',
-                fontFamily: 'var(--font-mono)',
-              }}
-            >
-              ↓ 下行
-            </span>
+            <span style={{ fontSize: 11, color: 'var(--signal-good)', fontFamily: 'var(--font-mono)' }}>↓ 下行</span>
             <span className="mono tnum" style={{ fontSize: 11, color: 'var(--fg-0)' }}>
-              {formatBps(record?.net_in)}
+              {formatBps(record?.network_rx)}
             </span>
           </div>
           <Sparkline
@@ -278,15 +261,11 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 11 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>出站</span>
-          <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>
-            {formatBytes(record?.net_total_up)}
-          </span>
+          <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>{formatBytes(record?.network_total_up)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>入站</span>
-          <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>
-            {formatBytes(record?.net_total_down)}
-          </span>
+          <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>{formatBytes(record?.network_total_down)}</span>
         </div>
       </div>
 
@@ -294,18 +273,14 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
-              延迟
-            </span>
+            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>延迟</span>
             <span className="mono tnum" style={{ fontSize: 12, color: statusColor }}>
               {record?.ping != null ? Math.round(record.ping) : '—'}
               <span style={{ fontSize: 9, color: 'var(--fg-2)', marginLeft: 1 }}>ms</span>
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
-              丢包率
-            </span>
+            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>丢包率</span>
             <span
               className="mono tnum"
               style={{
@@ -322,32 +297,24 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
 
       <div className="seam" />
 
-      {/* footer: expiry + uptime + labels */}
+      {/* footer */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 11 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>到期</span>
-          <span className="mono tnum" style={{ color: 'var(--fg-1)' }}>
-            {days != null ? `${days} 天` : '—'}
-          </span>
+          <span className="mono tnum" style={{ color: 'var(--fg-1)' }}>{days != null ? `${days} 天` : '—'}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>在线</span>
-          <span className="mono tnum" style={{ color: 'var(--accent-bright)' }}>
-            {formatUptimeShort(record?.uptime)}
-          </span>
+          <span className="mono tnum" style={{ color: 'var(--accent-bright)' }}>{formatUptimeShort(record?.uptime)}</span>
         </div>
       </div>
 
-      {labels.bandwidth || labels.traffic ? (
+      {(labels.bandwidth || labels.traffic) && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {labels.bandwidth && (
-            <Etch color="var(--signal-info)">{labels.bandwidth.value}</Etch>
-          )}
-          {labels.traffic && (
-            <Etch color="var(--accent-bright)">{labels.traffic.value}</Etch>
-          )}
+          {labels.bandwidth && <Etch color="var(--signal-info)">{labels.bandwidth.value}</Etch>}
+          {labels.traffic && <Etch color="var(--accent-bright)">{labels.traffic.value}</Etch>}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }
@@ -369,8 +336,7 @@ function PingBar({ data }: { data: number[] }) {
   return (
     <div style={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 14 }}>
       {data.map((v, i) => {
-        const color =
-          v > 200 ? 'var(--signal-bad)' : v > 100 ? 'var(--signal-warn)' : 'var(--signal-good)'
+        const color = v > 200 ? 'var(--signal-bad)' : v > 100 ? 'var(--signal-warn)' : 'var(--signal-good)'
         const h = Math.max(3, Math.min(14, (v / 250) * 14 + 3))
         return (
           <div

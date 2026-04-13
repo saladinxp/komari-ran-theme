@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OverviewPage } from '@/pages/Overview'
+import { useKomari } from '@/hooks/useKomari'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -21,6 +22,7 @@ function loadTheme(): Theme {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
+  const { nodes, records, config, conn } = useKomari()
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -31,12 +33,22 @@ export default function App() {
     }
   }, [theme])
 
+  // Dev fallback: when running outside a Komari panel (no /api/nodes and no WS),
+  // show mock data so the theme is previewable.
+  const useMockFallback = nodes.length === 0 && conn !== 'open'
+  const displayNodes = useMockFallback ? MOCK_NODES : nodes
+  const displayRecords = useMockFallback ? MOCK_RECORDS : records
+
+  const siteName = config?.site_name ?? '岚 · Komari'
+
   return (
     <OverviewPage
-      nodes={MOCK_NODES}
-      records={MOCK_RECORDS}
+      nodes={displayNodes}
+      records={displayRecords}
       theme={theme}
       onTheme={setTheme}
+      siteName={siteName}
+      conn={conn}
     />
   )
 }

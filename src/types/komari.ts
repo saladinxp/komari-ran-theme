@@ -1,87 +1,112 @@
 /**
- * Komari Probe API types
- * Based on observed API shape from Komari panel.
+ * Komari Probe API types (real shape, observed from live panel).
+ *
+ * Two record shapes coexist:
+ *  - Nested (raw, from /api/clients WS): cpu.usage, ram.used, network.up...
+ *  - Flat (after normalization): cpu, memory_used, network_tx...
+ *
+ * We always normalize to flat shape for components.
  */
 
 export type NodeStatus = 'good' | 'warn' | 'bad'
 
+/** /api/nodes — node metadata */
 export interface KomariNode {
   uuid: string
-  name: string
+  name?: string
+  /** OS string from agent boot */
+  os?: string
   cpu_name?: string
+  cpu_model?: string
   cpu_cores?: number
   arch?: string
-  os?: string
   ip?: string
   region?: string
-  flag?: string
   group?: string
-  /** Raw tags string from Komari, e.g. "1Gbps<green>;5T<blue>" */
+  /** Bandwidth/traffic labels: "1Gbps<green>;5T<blue>" */
   tags?: string
-  /** ISO date string */
+  /** ISO date — node expiry */
   expired_at?: string
   price?: number
-  /** Currency / period suffix, e.g. "$/月" */
   billing_cycle?: string
+  weight?: number
+  /** When true, node is hidden from anonymous viewers */
   hidden?: boolean
+  /** Country code; sometimes present, sometimes derived from region */
+  flag?: string
 }
 
-/** Live record snapshot pushed via /api/clients/[uuid]/recent or WS */
-export interface KomariRecord {
-  uuid: string
-  /** CPU usage percent 0..100 */
-  cpu?: number
-  /**
-   * RAM — may be percent (0..100) OR absolute bytes depending on Komari version.
-   * Treat values > 100 as bytes; divide by ram_total to derive percent.
-   */
-  ram?: number
-  ram_total?: number
-  swap?: number
-  swap_total?: number
-  disk?: number
-  disk_total?: number
-  load?: number
-  process?: number
-  tcp_conn_count?: number
-  udp_conn_count?: number
-  /** Bytes per second */
-  net_in?: number
-  net_out?: number
-  /** Cumulative bytes since boot — resets on reboot, NOT per-billing */
-  net_total_up?: number
-  net_total_down?: number
-  /** Latest ping ms */
-  ping?: number
-  /** Packet loss percent */
-  loss?: number
-  online?: boolean
-  /** Uptime seconds */
+/** Raw nested record from Komari WebSocket /api/clients */
+export interface KomariRecordRaw {
+  cpu?: { usage?: number }
+  ram?: { used?: number; total?: number }
+  swap?: { used?: number; total?: number }
+  disk?: { used?: number; total?: number }
+  network?: { up?: number; down?: number; totalUp?: number; totalDown?: number }
+  connections?: { tcp?: number; udp?: number }
+  load?: { load1?: number; load5?: number; load15?: number }
   uptime?: number
+  process?: number
+  os?: string
+  cpu_model?: string
+  message?: string
   updated_at?: string
 }
 
+/** Normalized flat record — what components consume */
+export interface KomariRecord {
+  uuid: string
+  online: boolean
+  /** CPU usage percent 0..100 */
+  cpu?: number
+  memory_used?: number
+  memory_total?: number
+  swap_used?: number
+  swap_total?: number
+  disk_used?: number
+  disk_total?: number
+  /** Bytes per second, instantaneous */
+  network_tx?: number
+  network_rx?: number
+  /** Cumulative bytes since boot — resets on reboot */
+  network_total_up?: number
+  network_total_down?: number
+  tcp?: number
+  udp?: number
+  load1?: number
+  load5?: number
+  load15?: number
+  uptime?: number
+  process?: number
+  os?: string
+  cpu_model?: string
+  message?: string
+  updated_at?: string
+  /** Recent ping ms (from /api/records/ping) */
+  ping?: number
+  /** Packet loss percent */
+  loss?: number
+}
+
+/** /api/public — site config */
 export interface KomariPublicConfig {
   site_name?: string
   description?: string
-  /** Data retention days for charts */
   record_keep_days?: number
   ping_keep_days?: number
+  custom_css?: string
+  footer_text?: string
+  announce_text?: string
+  theme_settings?: Record<string, unknown>
 }
 
-export interface KomariAlert {
-  id: string | number
-  level: 'info' | 'warn' | 'bad'
-  level_label?: string
-  message: string
-  target?: string
-  timestamp: string
+export interface KomariMe {
+  logged_in?: boolean
+  username?: string
 }
 
-/** Parsed bandwidth/traffic from node.tags */
-export interface NodeLabels {
-  bandwidth?: { value: string; color?: string }
-  traffic?: { value: string; color?: string }
-  net_type?: { value: string; color?: string }
-  raw: Array<{ value: string; color?: string }>
+/** Envelope from WS /api/clients */
+export interface KomariWSPayload {
+  online?: string[]
+  data?: Record<string, KomariRecordRaw | KomariRecord>
 }

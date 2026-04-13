@@ -29,20 +29,41 @@
 ```
 src/
 ├── styles/tokens.css           设计令牌 + 双主题色板 + 动画
-├── types/komari.ts             Komari API 类型定义
+├── types/komari.ts             Komari API 类型(嵌套原始 + 扁平规范化)
+├── api/
+│   ├── client.ts               REST + WebSocket 客户端,自动重连
+│   └── normalize.ts            原始 → 内部统一结构
+├── hooks/
+│   └── useKomari.ts            数据流 hook,接 /api/nodes + WS /api/clients
 ├── utils/
 │   ├── format.ts               字节/百分比/parseLabels/daysUntil
 │   └── series.ts               数据生成
-├── data/mock.ts                开发期 mock 数据
+├── data/mock.ts                开发期 mock 数据(API 不可达时显示)
 ├── components/
 │   ├── atoms/                  Etch / Numeric / StatusDot / SerialPlate / ProgressBar / Donut
 │   ├── charts/                 Sparkline / Heartbeat
-│   ├── cards/                  NodeCardCompact (RowCard / DetailCard 后续添加)
+│   ├── cards/                  NodeCardCompact (RowCard / DetailCard 后续)
 │   └── panels/                 Topbar
 ├── pages/
 │   └── Overview.tsx            概览页
-├── App.tsx                     主应用,主题持久化
+├── App.tsx                     主应用,主题持久化,API/mock 兜底
 └── main.tsx                    入口
+```
+
+## 数据接入
+
+主题部署后默认连同源的 Komari API:
+
+- `GET /api/nodes` — 节点列表
+- `GET /api/public` — 站点配置(站点名、retention 等)
+- `WebSocket /api/clients` — 实时数据,自动重连,指数退避
+
+如果 API 不可达(如本地 `npm run dev` 单独跑),会自动切到 mock 数据预览。
+
+开发时可设置 `VITE_KOMARI_BASE` 环境变量指向已部署的 Komari 实例:
+
+```bash
+VITE_KOMARI_BASE=https://your-komari.com npm run dev
 ```
 
 ## 开发
