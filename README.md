@@ -24,6 +24,41 @@
 
 切换可在右上角 NIGHT/MIST 按钮,或由 Komari 主题设置默认值。
 
+## 安装
+
+前往 [Releases](https://github.com/saladinxp/komari-ran-theme/releases) 下载最新 zip,在 Komari 后台 → 主题设置 → 上传 zip 应用即可。
+
+## 数据接入
+
+主题部署后默认连同源的 Komari API:
+
+- `GET /api/nodes` — 节点列表
+- `GET /api/public` — 站点配置(站点名、retention 等)
+- `WebSocket /api/clients` — 实时数据,自动重连,指数退避
+
+API 不可达时(如本地 `npm run dev` 单独跑),会自动切到 mock 数据预览。
+
+## 开发
+
+```bash
+npm install
+npm run dev          # Vite HMR
+npm run build        # 生成 dist/index.html(单文件,所有 JS/CSS 内联)
+```
+
+开发时可设置 `VITE_KOMARI_BASE` 指向已部署的 Komari 实例:
+
+```bash
+VITE_KOMARI_BASE=https://your-komari.com npm run dev
+```
+
+发版打包(给 Komari 用的 zip):
+
+```bash
+npm run build
+zip -rq komari-ran-vX.Y.Z.zip komari-theme.json preview.png dist/
+```
+
 ## 目录结构
 
 ```
@@ -34,58 +69,18 @@ src/
 │   ├── client.ts               REST + WebSocket 客户端,自动重连
 │   └── normalize.ts            原始 → 内部统一结构
 ├── hooks/
-│   └── useKomari.ts            数据流 hook,接 /api/nodes + WS /api/clients
-├── utils/
-│   ├── format.ts               字节/百分比/parseLabels/daysUntil
-│   └── series.ts               数据生成
-├── data/mock.ts                开发期 mock 数据(API 不可达时显示)
+│   └── useKomari.ts            数据流 hook
+├── utils/                      format / series
+├── data/mock.ts                开发期 mock(API 不可达时显示)
 ├── components/
 │   ├── atoms/                  Etch / Numeric / StatusDot / SerialPlate / ProgressBar / Donut
 │   ├── charts/                 Sparkline / Heartbeat
-│   ├── cards/                  NodeCardCompact (RowCard / DetailCard 后续)
+│   ├── cards/                  NodeCardCompact
 │   └── panels/                 Topbar
-├── pages/
-│   └── Overview.tsx            概览页
-├── App.tsx                     主应用,主题持久化,API/mock 兜底
-└── main.tsx                    入口
+├── pages/Overview.tsx
+├── App.tsx
+└── main.tsx
 ```
-
-## 数据接入
-
-主题部署后默认连同源的 Komari API:
-
-- `GET /api/nodes` — 节点列表
-- `GET /api/public` — 站点配置(站点名、retention 等)
-- `WebSocket /api/clients` — 实时数据,自动重连,指数退避
-
-如果 API 不可达(如本地 `npm run dev` 单独跑),会自动切到 mock 数据预览。
-
-开发时可设置 `VITE_KOMARI_BASE` 环境变量指向已部署的 Komari 实例:
-
-```bash
-VITE_KOMARI_BASE=https://your-komari.com npm run dev
-```
-
-## 开发
-
-```bash
-# 安装依赖
-npm install
-
-# 开发模式(Vite HMR)
-npm run dev
-
-# 构建单文件 dist/index.html(给 Komari)
-npm run build
-```
-
-构建产物 `dist/index.html` 是单文件,所有 JS / CSS 已内联(由 `vite-plugin-singlefile` 处理),可直接上传至 Komari 后台主题目录。
-
-## 安装到 Komari 面板
-
-1. `npm run build` 生成 `dist/index.html`
-2. 将仓库根的 `komari-theme.json`、`preview.png` 与 `dist/` 目录一同打包为 zip
-3. 在 Komari 后台 → 主题设置 → 上传 zip 应用
 
 ## 技术栈
 
