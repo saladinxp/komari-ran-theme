@@ -94,4 +94,4 @@ MIT
 
 ## 作者
 
-[Miuler](https://github.com/saladinxp) · [lol.moe](https://lol.moe)
+[Miuler](https://github.com/saladinxp) · [obsr.net](https://obsr.net)

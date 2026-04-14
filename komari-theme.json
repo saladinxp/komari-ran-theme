@@ -1,38 +1,51 @@
 {
-  "$schema": "https://komari.ai/schema/theme.schema.json",
-  "name": "Ran",
+  "name": "Komari Ran Theme",
   "short": "岚",
+  "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
   "version": "0.2.0",
   "author": "Miuler",
-  "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
+  "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
-  "repository": "https://github.com/saladinxp/komari-ran-theme",
-  "homepage": "https://lol.moe",
-  "configuration": [
-    {
-      "key": "version_tag",
-      "type": "string",
-      "default": "0.2.0",
-      "title": "版本号 (Version Tag)",
-      "description": "当前主题版本号,用于显示在页脚"
-    },
-    {
-      "key": "default_theme",
-      "type": "select",
-      "default": "ran-night",
-      "title": "默认主题 (Default Theme)",
-      "description": "页面首次加载时的默认主题",
-      "options": [
-        { "label": "墨石 (Night)", "value": "ran-night" },
-        { "label": "雾色 (Mist)", "value": "ran-mist" }
-      ]
-    },
-    {
-      "key": "site_name",
-      "type": "string",
-      "default": "岚 · Komari Probe",
-      "title": "站点名称 (Site Name)",
-      "description": "顶部显示的站点名称"
-    }
-  ]
+  "configuration": {
+    "type": "managed",
+    "name": "[ 岚 / RAN ] 主题配置",
+    "data": [
+      {
+        "name": "◇ THEME // 主题",
+        "type": "title"
+      },
+      {
+        "key": "default_theme",
+        "name": "[ MODE ] 默认主题",
+        "type": "string",
+        "default": "ran-night",
+        "help": "页面首次加载时的默认主题。可选 ran-night(墨石,深色)或 ran-mist(雾色,浅色)。用户切换后浏览器会记住偏好。"
+      },
+      {
+        "key": "version_tag",
+        "name": "[ SYS.VER ] 版本号",
+        "type": "string",
+        "default": "v0.2.0",
+        "help": "页脚显示的版本标识"
+      },
+      {
+        "name": "◇ INFO // 站点",
+        "type": "title"
+      },
+      {
+        "key": "site_name",
+        "name": "[ SITE ] 站点名称",
+        "type": "string",
+        "default": "岚 · Komari",
+        "help": "顶部显示的站点名,留空则使用 Komari /api/public 的 site_name"
+      },
+      {
+        "key": "footer_text",
+        "name": "[ FOOTER ] 页脚文字",
+        "type": "string",
+        "default": "POWERED BY KOMARI",
+        "help": "页脚右侧文字"
+      }
+    ]
+  }
 }
