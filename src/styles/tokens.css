@@ -148,14 +148,15 @@
   box-sizing: border-box;
 }
 
+/* Komari may embed our markup inside its own layout shell.
+   Don't force 100% height — let content flow naturally and avoid
+   creating an oversized scroll area when the host already has a header. */
 html,
-body,
-#root {
-  height: 100%;
+body {
+  margin: 0;
 }
 
 body {
-  margin: 0;
   font-family: var(--font-sans);
   font-size: var(--t-body);
   color: var(--fg-0);

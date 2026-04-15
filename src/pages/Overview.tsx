@@ -29,7 +29,7 @@ export function OverviewPage({ nodes, records, theme, onTheme, siteName = '岚 �
     conn === 'open' ? 'LIVE' : conn === 'connecting' ? 'CONNECTING' : conn === 'error' ? 'ERROR' : 'OFFLINE'
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <Topbar
         title={siteName}
         subtitle={`${nodes.length} PROBES · ${connLabel}`}
