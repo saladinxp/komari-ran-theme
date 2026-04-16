@@ -1,6 +1,7 @@
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusDot } from '@/components/atoms/StatusDot'
+import { Segmented } from '@/components/atoms/Segmented'
 import { Icon } from '@/components/atoms/icons'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -114,56 +115,5 @@ export function Topbar({ title, subtitle, theme, onTheme, online, total, conn }:
         />
       </div>
     </header>
-  )
-}
-
-interface SegmentedProps {
-  options: Array<{ value: string; label: string }>
-  value: string
-  onChange: (v: string) => void
-}
-
-function Segmented({ options, value, onChange }: SegmentedProps) {
-  return (
-    <div
-      style={{
-        display: 'inline-flex',
-        background: 'var(--bg-inset)',
-        border: '1px solid var(--edge-engrave)',
-        borderRadius: 4,
-        padding: 2,
-        boxShadow: 'inset 0 1px 0 var(--edge-deep)',
-      }}
-    >
-      {options.map((opt) => {
-        const active = opt.value === value
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            style={{
-              padding: '4px 10px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              fontWeight: 500,
-              border: active ? '1px solid var(--edge-mid)' : '1px solid transparent',
-              borderRadius: 3,
-              background: active ? 'var(--bg-3)' : 'transparent',
-              color: active ? 'var(--fg-0)' : 'var(--fg-2)',
-              boxShadow: active
-                ? '0 1px 0 var(--edge-bright) inset, 0 -1px 0 var(--edge-deep) inset'
-                : 'none',
-              cursor: 'pointer',
-              transition: 'background 120ms, color 120ms',
-            }}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
   )
 }
