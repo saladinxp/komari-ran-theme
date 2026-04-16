@@ -2,17 +2,23 @@ import { useMemo, useState } from 'react'
 import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { HeroStats } from '@/components/panels/HeroStats'
+import { CardFrame } from '@/components/panels/CardFrame'
+import { AlertsList, type AlertItem } from '@/components/panels/AlertsList'
 import { NodeCardCompact } from '@/components/cards/NodeCardCompact'
+import { NodeCardRow } from '@/components/cards/NodeCardRow'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
+import { Numeric } from '@/components/atoms/Numeric'
+import { PingChart } from '@/components/charts/PingChart'
+import { BarChart } from '@/components/charts/BarChart'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import { genSeries } from '@/utils/series'
 import { formatBytes } from '@/utils/format'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
-type ViewMode = 'grid' | 'row' | 'detail'
+type ViewMode = 'grid' | 'row'
 type Filter = 'all' | 'on' | 'warn' | 'off'
 
 interface Props {
@@ -35,7 +41,6 @@ export function OverviewPage({
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
 
-  // ── derive stats from real records ──
   const heroStats = useMemo(() => {
     let online = 0
     let warn = 0
@@ -54,6 +59,8 @@ export function OverviewPage({
 
     const totalTraffic = totalNetTx + totalNetRx
     const total = nodes.length
+    const trafficStr = formatBytes(totalTraffic)
+    const [trafficVal, trafficUnit] = trafficStr.split(' ')
 
     return [
       {
@@ -73,15 +80,17 @@ export function OverviewPage({
       {
         label: 'TRAFFIC TOTAL',
         code: 'M03',
-        value: formatBytes(totalTraffic).split(' ')[0] || '0',
-        unit: formatBytes(totalTraffic).split(' ')[1] || 'B',
+        value: trafficVal || '0',
+        unit: trafficUnit || 'B',
         spark: genSeries(30, 13, 60, 18),
         sparkColor: 'var(--accent)',
       },
       {
         label: 'REGIONS',
         code: 'M04',
-        value: String(new Set(nodes.map((n) => n.region?.split('-')[0]).filter(Boolean)).size),
+        value: String(
+          new Set(nodes.map((n) => n.region?.split('-')[0]).filter(Boolean)).size,
+        ),
         spark: genSeries(30, 14, 50, 5),
         sparkColor: 'var(--signal-info)',
       },
@@ -112,7 +121,82 @@ export function OverviewPage({
     return `CLUSTER · ${nodes.length} NODES / ${regions.size} REGIONS`
   }, [nodes])
 
-  const viewLabel = view === 'grid' ? 'GRID · COMPACT' : view === 'row' ? 'LIST · ROW' : 'DETAIL · FOCUS'
+  // ── derive bottom rail data from real records ──
+  const alerts = useMemo<AlertItem[]>(() => {
+    const out: AlertItem[] = []
+    let i = 1
+    for (const n of nodes) {
+      const r = records[n.uuid]
+      if (!r) continue
+      if (r.online === false) {
+        out.push({
+          code: `A·${String(i++).padStart(2, '0')}`,
+          level: 'bad',
+          levelLabel: 'OFFLINE',
+          message: `${n.name} · 探针离线`,
+          target: n.region ?? n.uuid.slice(0, 8),
+          time: 'now',
+        })
+      } else if ((r.cpu ?? 0) > 90) {
+        out.push({
+          code: `A·${String(i++).padStart(2, '0')}`,
+          level: 'bad',
+          levelLabel: 'CRIT',
+          message: `${n.name} · CPU ${Math.round(r.cpu ?? 0)}%`,
+          target: n.region ?? n.uuid.slice(0, 8),
+          time: 'live',
+        })
+      } else if ((r.cpu ?? 0) > 80) {
+        out.push({
+          code: `A·${String(i++).padStart(2, '0')}`,
+          level: 'warn',
+          levelLabel: 'WARN',
+          message: `${n.name} · CPU ${Math.round(r.cpu ?? 0)}%`,
+          target: n.region ?? n.uuid.slice(0, 8),
+          time: 'live',
+        })
+      } else if ((r.loss ?? 0) > 5) {
+        out.push({
+          code: `A·${String(i++).padStart(2, '0')}`,
+          level: 'warn',
+          levelLabel: 'LOSS',
+          message: `${n.name} · 丢包 ${(r.loss ?? 0).toFixed(1)}%`,
+          target: n.region ?? n.uuid.slice(0, 8),
+          time: 'live',
+        })
+      }
+      if (out.length >= 6) break
+    }
+    return out
+  }, [nodes, records])
+
+  const pingSeries = useMemo(() => {
+    const onlineNodes = nodes.filter((n) => records[n.uuid]?.online).slice(0, 4)
+    return onlineNodes.map((n, i) => ({
+      data: genSeries(60, hashSeed(n.uuid) + i, 40 + i * 20, 30),
+      label: n.name,
+    }))
+  }, [nodes, records])
+
+  const trafficSeries = useMemo(() => genSeries(30, 31, 60, 30).map(Math.round), [])
+
+  // sum traffic for the bottom card
+  const trafficSummary = useMemo(() => {
+    let up = 0
+    let down = 0
+    for (const r of Object.values(records)) {
+      up += r?.network_total_up ?? 0
+      down += r?.network_total_down ?? 0
+    }
+    const peak = Math.max(...trafficSeries)
+    return {
+      up: formatBytes(up),
+      down: formatBytes(down),
+      peak: `${peak}`,
+    }
+  }, [records, trafficSeries])
+
+  const viewLabel = view === 'grid' ? 'GRID · COMPACT' : 'LIST · ROW'
 
   return (
     <div
@@ -172,7 +256,6 @@ export function OverviewPage({
                 options={[
                   { value: 'grid', label: 'GRID' },
                   { value: 'row', label: 'ROW' },
-                  { value: 'detail', label: 'DETAIL' },
                 ]}
               />
               <Segmented
@@ -211,7 +294,7 @@ export function OverviewPage({
                   : 'CONNECTING TO PROBE NETWORK …'
                 : 'NO PROBES MATCH FILTER'}
             </div>
-          ) : (
+          ) : view === 'grid' ? (
             <div
               style={{
                 display: 'grid',
@@ -229,7 +312,100 @@ export function OverviewPage({
                 />
               ))}
             </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {filteredNodes.map((node) => (
+                <NodeCardRow
+                  key={node.uuid}
+                  node={node}
+                  record={records[node.uuid]}
+                  netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
+                  pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                />
+              ))}
+            </div>
           )}
+
+          {/* Bottom rail — Alerts / Ping / Traffic */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 16,
+            }}
+          >
+            <CardFrame
+              title="Active Alerts"
+              code={`A · ${String(alerts.length).padStart(2, '0')}`}
+              action={<Etch>RT</Etch>}
+              inset
+            >
+              <AlertsList alerts={alerts} />
+            </CardFrame>
+
+            <CardFrame
+              title="Ping · 1H"
+              code="P · 06"
+              action={<Etch>{`${pingSeries.length} TARGETS`}</Etch>}
+            >
+              {pingSeries.length > 0 ? (
+                <PingChart series={pingSeries} width={340} height={140} yMax={180} />
+              ) : (
+                <div
+                  style={{
+                    padding: '40px 16px',
+                    textAlign: 'center',
+                    color: 'var(--fg-3)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  NO ONLINE TARGETS
+                </div>
+              )}
+            </CardFrame>
+
+            <CardFrame title="Traffic · 30D" code="T · 09">
+              <BarChart
+                data={trafficSeries}
+                width={340}
+                height={110}
+                color="var(--accent)"
+                labels={Array.from({ length: 30 }, (_, i) => (i % 5 === 0 ? String(i + 1) : ''))}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTop: '1px solid var(--edge-engrave)',
+                  gap: 8,
+                }}
+              >
+                <div>
+                  <Etch>↑ TOTAL</Etch>
+                  <div>
+                    <Numeric value={trafficSummary.up.split(' ')[0]} unit={trafficSummary.up.split(' ')[1]} size={14} />
+                  </div>
+                </div>
+                <div>
+                  <Etch>↓ TOTAL</Etch>
+                  <div>
+                    <Numeric value={trafficSummary.down.split(' ')[0]} unit={trafficSummary.down.split(' ')[1]} size={14} />
+                  </div>
+                </div>
+                <div>
+                  <Etch>PEAK</Etch>
+                  <div>
+                    <Numeric value={trafficSummary.peak} unit="GB" size={14} />
+                  </div>
+                </div>
+              </div>
+            </CardFrame>
+          </div>
         </main>
 
         <footer
@@ -247,7 +423,7 @@ export function OverviewPage({
             marginTop: 'auto',
           }}
         >
-          <span>岚 · KOMARI PROBE THEME · v0.2.0</span>
+          <span>岚 · KOMARI PROBE THEME · v0.3.0</span>
           <span>POWERED BY KOMARI</span>
         </footer>
       </div>
