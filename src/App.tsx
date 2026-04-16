@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { OverviewPage } from '@/pages/Overview'
 import { useKomari } from '@/hooks/useKomari'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
+import { ThemeCover } from '@/components/ThemeCover'
 
 type Theme = 'ran-night' | 'ran-mist'
 
@@ -20,6 +21,12 @@ function loadTheme(): Theme {
   return 'ran-night'
 }
 
+/** Detect ?cover URL param to render the theme cover card alone (used to generate preview.png). */
+function isCoverMode(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).has('cover')
+}
+
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
   const { nodes, records, config, conn } = useKomari()
@@ -32,6 +39,24 @@ export default function App() {
       /* ignore */
     }
   }, [theme])
+
+  // Cover mode — render only the theme thumbnail card.
+  if (isCoverMode()) {
+    const params = new URLSearchParams(window.location.search)
+    const coverTheme = (params.get('theme') as Theme) || theme
+    return (
+      <div
+        style={{
+          display: 'inline-block',
+          padding: 0,
+          margin: 0,
+          background: 'transparent',
+        }}
+      >
+        <ThemeCover theme={coverTheme} />
+      </div>
+    )
+  }
 
   // Dev fallback: when running outside a Komari panel (no /api/nodes and no WS),
   // show mock data so the theme is previewable.
