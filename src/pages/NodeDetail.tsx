@@ -9,6 +9,7 @@ import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { ProgressBar } from '@/components/atoms/ProgressBar'
 import { Sparkline } from '@/components/charts/Sparkline'
+import { PingChart } from '@/components/charts/PingChart'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import {
   formatBps,
@@ -19,7 +20,9 @@ import {
   daysUntil,
   resolveRamPercent,
 } from '@/utils/format'
-import { genSeries } from '@/utils/series'
+import { bucketLoadHistory, hasLoadData } from '@/utils/load'
+import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
+import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -44,9 +47,23 @@ export function NodeDetailPage({
   conn = 'idle',
   siteName = '岚 · Komari',
 }: Props) {
+  // Hooks must be called before any early return.
+  const history = useNodeHistory(uuid, 1)
+
   const node = useMemo(() => nodes.find((n) => n.uuid === uuid), [nodes, uuid])
   const record = node ? records[node.uuid] : undefined
   const labels = node ? parseLabels(node.tags) : { raw: [] }
+
+  // Bucketed real history (zero-filled when there's no data yet).
+  const buckets = useMemo(() => bucketLoadHistory(history.load, 60), [history.load])
+  const pingTargets = useMemo(
+    () => (hasPingData(history.ping) ? aggregatePingByTarget(history.ping, 60, 60 * 60 * 1000, 6) : []),
+    [history.ping],
+  )
+  const pingSeries = useMemo(
+    () => pingTargets.map((t) => ({ data: t.data, label: t.task.name })),
+    [pingTargets],
+  )
 
   if (!node) {
     return (
@@ -120,13 +137,11 @@ export function NodeDetailPage({
 
   const subtitle = `${node.region ?? '—'} · ${node.ip ?? '—'} · UP ${online ? formatUptime(record?.uptime) : '—'}`
 
-  // Stats are derived from the live record only; history charts use mock for now.
-  // (TODO v0.5: pull real history from /api/records/load?uuid=…)
-  const seed = hashSeed(uuid)
-  const cpuHist = genSeries(60, seed + 1, cpu || 30, 25)
-  const memHist = genSeries(60, seed + 2, ramPct || 50, 15)
-  const netUpHist = genSeries(60, seed + 3, 50, 35)
-  const netDownHist = genSeries(60, seed + 4, 60, 35)
+  const haveLoadHistory = hasLoadData(history.load)
+  const cpuHist = buckets.cpu
+  const memHist = buckets.ram
+  const netUpHist = buckets.netOut
+  const netDownHist = buckets.netIn
 
   // Specs strip
   const specs = [
@@ -319,7 +334,7 @@ export function NodeDetailPage({
             />
           </div>
 
-          {/* Charts grid */}
+          {/* Charts grid — real history from /api/records/load */}
           <div
             style={{
               display: 'grid',
@@ -327,51 +342,106 @@ export function NodeDetailPage({
               gap: 16,
             }}
           >
-            <CardFrame title="CPU · 1H" code="C · 01" action={<Etch>SAMPLE 5S</Etch>}>
-              <Sparkline
-                data={cpuHist}
-                width={400}
-                height={120}
-                color="var(--accent)"
-                fillOpacity={0.18}
-                showBaseline
-                thickness={1.4}
-              />
+            <CardFrame
+              title="CPU · 1H"
+              code="C · 01"
+              action={<Etch>{haveLoadHistory ? `${history.load.count} SAMPLES` : history.loading ? 'LOADING' : 'NO DATA'}</Etch>}
+            >
+              <ChartOrEmpty empty={!haveLoadHistory}>
+                <Sparkline
+                  data={cpuHist}
+                  width={400}
+                  height={120}
+                  color="var(--accent)"
+                  fillOpacity={0.18}
+                  showBaseline
+                  thickness={1.4}
+                />
+              </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Memory · 1H" code="C · 02">
-              <Sparkline
-                data={memHist}
-                width={400}
-                height={120}
-                color="var(--signal-info)"
-                fillOpacity={0.18}
-                showBaseline
-                thickness={1.4}
-              />
+              <ChartOrEmpty empty={!haveLoadHistory}>
+                <Sparkline
+                  data={memHist}
+                  width={400}
+                  height={120}
+                  color="var(--signal-info)"
+                  fillOpacity={0.18}
+                  showBaseline
+                  thickness={1.4}
+                />
+              </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Network ↑ · 1H" code="C · 03" action={<Etch>BYTES/S</Etch>}>
-              <Sparkline
-                data={netUpHist}
-                width={400}
-                height={120}
-                color="var(--accent-bright)"
-                fillOpacity={0.18}
-                showBaseline
-                thickness={1.4}
-              />
+              <ChartOrEmpty empty={!haveLoadHistory}>
+                <Sparkline
+                  data={netUpHist}
+                  width={400}
+                  height={120}
+                  color="var(--accent-bright)"
+                  fillOpacity={0.18}
+                  showBaseline
+                  thickness={1.4}
+                />
+              </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Network ↓ · 1H" code="C · 04" action={<Etch>BYTES/S</Etch>}>
-              <Sparkline
-                data={netDownHist}
-                width={400}
-                height={120}
-                color="var(--signal-good)"
-                fillOpacity={0.18}
-                showBaseline
-                thickness={1.4}
-              />
+              <ChartOrEmpty empty={!haveLoadHistory}>
+                <Sparkline
+                  data={netDownHist}
+                  width={400}
+                  height={120}
+                  color="var(--signal-good)"
+                  fillOpacity={0.18}
+                  showBaseline
+                  thickness={1.4}
+                />
+              </ChartOrEmpty>
             </CardFrame>
           </div>
+
+          {/* Per-node ping — this probe → each speed-test target */}
+          <CardFrame
+            title="测速点延迟 · 1H"
+            code="P · 06"
+            action={
+              <Etch>
+                {pingSeries.length > 0
+                  ? `${pingSeries.length} TARGET${pingSeries.length === 1 ? '' : 'S'}`
+                  : history.loading
+                    ? 'LOADING'
+                    : 'NO TARGETS'}
+              </Etch>
+            }
+          >
+            {pingSeries.length > 0 ? (
+              <PingChart series={pingSeries} width={800} height={170} />
+            ) : (
+              <div
+                style={{
+                  padding: '40px 16px',
+                  textAlign: 'center',
+                  color: 'var(--fg-3)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  lineHeight: 1.6,
+                }}
+              >
+                {history.loading ? '加载中…' : '该节点无测速点数据'}
+                {!history.loading && (
+                  <>
+                    <br />
+                    <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                      configure ping tasks in komari admin
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </CardFrame>
+
 
           {/* Connections + Traffic totals */}
           <div
@@ -434,6 +504,32 @@ interface BigMetricProps {
   sub?: string
 }
 
+function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.ReactNode }) {
+  if (empty) {
+    return (
+      <div
+        style={{
+          height: 120,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--fg-3)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          letterSpacing: '0.14em',
+          textTransform: 'uppercase',
+          background: 'var(--bg-inset)',
+          border: '1px solid var(--edge-engrave)',
+          borderRadius: 2,
+        }}
+      >
+        NO HISTORY DATA
+      </div>
+    )
+  }
+  return <>{children}</>
+}
+
 function BigMetric({ label, value, unit, progress, status, sub }: BigMetricProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
@@ -476,8 +572,3 @@ function ConnRow({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-function hashSeed(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}

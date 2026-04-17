@@ -15,7 +15,6 @@ interface NavItem {
 const NAV: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Icon.server, enabled: true },
   { id: 'nodes', label: 'Nodes', icon: Icon.cpu, enabled: true },
-  { id: 'ping', label: 'Ping', icon: Icon.ping, enabled: false },
   { id: 'traffic', label: 'Traffic', icon: Icon.net, enabled: false },
   { id: 'map', label: 'Geo Map', icon: Icon.globe, enabled: false },
   { id: 'alerts', label: 'Alerts', icon: Icon.alert, enabled: false },
@@ -28,7 +27,7 @@ interface Props {
   version?: string
 }
 
-export function Sidebar({ active, region = '岚 / RAN', version = 'v0.4.0' }: Props) {
+export function Sidebar({ active, region = '岚 / RAN', version = 'v0.5.0' }: Props) {
   return (
     <aside
       style={{

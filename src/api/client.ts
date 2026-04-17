@@ -82,6 +82,54 @@ export async function fetchPingHistory(hours = 1): Promise<PingHistory> {
   }
 }
 
+/** Per-node ping history — pings for one specific probe over `hours`. */
+export async function fetchNodePingHistory(uuid: string, hours = 1): Promise<PingHistory> {
+  try {
+    return await getJson<PingHistory>(
+      `/api/records/ping?uuid=${encodeURIComponent(uuid)}&hours=${hours}`,
+    )
+  } catch {
+    return { count: 0, tasks: [], records: [] }
+  }
+}
+
+/** /api/records/load?uuid=…&hours=N — flat per-node load history.
+ * Each record carries cpu / ram / disk as percent (0..100), bytes for net totals. */
+export interface LoadRecord {
+  /** ISO 8601 */
+  time: string
+  cpu?: number
+  ram?: number
+  ram_total?: number
+  disk?: number
+  disk_total?: number
+  swap?: number
+  swap_total?: number
+  load?: number
+  net_in?: number
+  net_out?: number
+  net_total_up?: number
+  net_total_down?: number
+  process?: number
+  connections?: number
+  connections_udp?: number
+}
+
+export interface LoadHistory {
+  count: number
+  records: LoadRecord[]
+}
+
+export async function fetchNodeLoadHistory(uuid: string, hours = 1): Promise<LoadHistory> {
+  try {
+    return await getJson<LoadHistory>(
+      `/api/records/load?uuid=${encodeURIComponent(uuid)}&hours=${hours}`,
+    )
+  } catch {
+    return { count: 0, records: [] }
+  }
+}
+
 export interface LiveSocket {
   close: () => void
 }
