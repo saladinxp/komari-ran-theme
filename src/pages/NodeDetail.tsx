@@ -7,9 +7,9 @@ import { Etch } from '@/components/atoms/Etch'
 import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
-import { ProgressBar } from '@/components/atoms/ProgressBar'
-import { Sparkline } from '@/components/charts/Sparkline'
+import { AreaChart } from '@/components/charts/AreaChart'
 import { PingChart } from '@/components/charts/PingChart'
+import { RadialGauge } from '@/components/charts/RadialGauge'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import {
   formatBps,
@@ -137,6 +137,13 @@ export function NodeDetailPage({
 
   const subtitle = `${node.region ?? '—'} · ${node.ip ?? '—'} · UP ${online ? formatUptime(record?.uptime) : '—'}`
 
+  // Global stats for the topbar (so it shows network-wide online count, not 1/1).
+  const globalOnline = useMemo(() => {
+    let n = 0
+    for (const x of nodes) if (records[x.uuid]?.online) n++
+    return n
+  }, [nodes, records])
+
   const haveLoadHistory = hasLoadData(history.load)
   const cpuHist = buckets.cpu
   const memHist = buckets.ram
@@ -194,8 +201,8 @@ export function NodeDetailPage({
           subtitle={subtitle}
           theme={theme}
           onTheme={onTheme}
-          online={online ? 1 : 0}
-          total={1}
+          online={globalOnline}
+          total={nodes.length}
           conn={conn}
         />
 
@@ -267,69 +274,107 @@ export function NodeDetailPage({
             ))}
           </div>
 
-          {/* Live metrics row */}
+          {/* Live metrics — five RadialGauges (ref: NodeDetailBoard) */}
           <div
             className="precision-card"
             style={{
-              padding: '16px 20px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-              gap: 24,
+              padding: '20px 16px',
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 16,
             }}
           >
-            <BigMetric
+            <RadialGauge
+              value={online ? cpu : 0}
+              max={100}
+              size={140}
               label="CPU"
-              value={online ? Math.round(cpu) : '—'}
               unit="%"
-              progress={online ? cpu : 0}
               status={cpu > 80 ? 'bad' : cpu > 60 ? 'warn' : 'good'}
             />
-            <BigMetric
+            <RadialGauge
+              value={online ? ramPct : 0}
+              max={100}
+              size={140}
               label="MEMORY"
-              value={online ? Math.round(ramPct) : '—'}
               unit="%"
-              progress={online ? ramPct : 0}
               status={ramPct > 80 ? 'bad' : ramPct > 60 ? 'warn' : 'good'}
-              sub={
-                online && record?.memory_used && record?.memory_total
-                  ? `${formatBytes(record.memory_used)} / ${formatBytes(record.memory_total)}`
-                  : undefined
-              }
             />
-            <BigMetric
+            <RadialGauge
+              value={online ? diskPct : 0}
+              max={100}
+              size={140}
               label="DISK"
-              value={online ? Math.round(diskPct) : '—'}
               unit="%"
-              progress={online ? diskPct : 0}
               status={diskPct > 85 ? 'bad' : diskPct > 70 ? 'warn' : 'good'}
-              sub={
-                online && record?.disk_used && record?.disk_total
-                  ? `${formatBytes(record.disk_used)} / ${formatBytes(record.disk_total)}`
-                  : undefined
+            />
+            <RadialGauge
+              value={online ? (record?.network_tx ?? 0) / 1024 / 1024 : 0}
+              max={100}
+              size={140}
+              label="NETWORK"
+              unit="MB/s"
+              status="good"
+            />
+            <RadialGauge
+              value={online ? (record?.load1 ?? 0) : 0}
+              max={Math.max(8, (node.cpu_cores ?? 1) * 2)}
+              size={140}
+              label="LOAD AVG"
+              unit=""
+              status={(record?.load1 ?? 0) > (node.cpu_cores ?? 1) * 1.5
+                ? 'bad'
+                : (record?.load1 ?? 0) > (node.cpu_cores ?? 1)
+                  ? 'warn'
+                  : 'good'}
+            />
+          </div>
+
+          {/* Sub-metrics row — used / total for memory, disk, load triplet */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 12,
+              padding: '10px 16px',
+              background: 'var(--bg-1)',
+              border: '1px solid var(--edge-engrave)',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            <SubLine
+              label="CPU"
+              value={online && record?.cpu != null ? `${record.cpu.toFixed(1)}%` : '—'}
+              sub={node.cpu_cores ? `${node.cpu_cores}-CORE` : undefined}
+            />
+            <SubLine
+              label="MEMORY"
+              value={
+                online && record?.memory_used != null && record?.memory_total
+                  ? `${formatBytes(record.memory_used)} / ${formatBytes(record.memory_total)}`
+                  : '—'
               }
             />
-            <BigMetric
-              label="LOAD AVG"
-              value={online && record?.load1 != null ? record.load1.toFixed(2) : '—'}
-              unit=""
-              progress={online ? Math.min(100, (record?.load1 ?? 0) * 30) : 0}
-              status={(record?.load1 ?? 0) > 4 ? 'bad' : (record?.load1 ?? 0) > 2 ? 'warn' : 'good'}
-              sub={
+            <SubLine
+              label="DISK"
+              value={
+                online && record?.disk_used != null && record?.disk_total
+                  ? `${formatBytes(record.disk_used)} / ${formatBytes(record.disk_total)}`
+                  : '—'
+              }
+            />
+            <SubLine
+              label="NET ↑/↓"
+              value={online ? `${formatBps(record?.network_tx)} / ${formatBps(record?.network_rx)}` : '—'}
+            />
+            <SubLine
+              label="LOAD 1/5/15"
+              value={
                 online && record?.load1 != null
                   ? `${record.load1.toFixed(2)} / ${record.load5?.toFixed(2) ?? '—'} / ${record.load15?.toFixed(2) ?? '—'}`
-                  : undefined
-              }
-            />
-            <BigMetric
-              label="NETWORK"
-              value={online ? formatBps(record?.network_tx).split(' ')[0] : '—'}
-              unit={online ? formatBps(record?.network_tx).split(' ')[1] : ''}
-              progress={undefined}
-              status="good"
-              sub={
-                online
-                  ? `↑ ${formatBps(record?.network_tx)} / ↓ ${formatBps(record?.network_rx)}`
-                  : undefined
+                  : '—'
               }
             />
           </div>
@@ -348,53 +393,57 @@ export function NodeDetailPage({
               action={<Etch>{haveLoadHistory ? `${history.load.count} SAMPLES` : history.loading ? 'LOADING' : 'NO DATA'}</Etch>}
             >
               <ChartOrEmpty empty={!haveLoadHistory}>
-                <Sparkline
+                <AreaChart
                   data={cpuHist}
                   width={400}
-                  height={120}
+                  height={140}
                   color="var(--accent)"
-                  fillOpacity={0.18}
-                  showBaseline
-                  thickness={1.4}
+                  yMin={0}
+                  yMax={100}
+                  threshold={80}
+                  gradientId="ndt-cpu"
                 />
               </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Memory · 1H" code="C · 02">
               <ChartOrEmpty empty={!haveLoadHistory}>
-                <Sparkline
+                <AreaChart
                   data={memHist}
                   width={400}
-                  height={120}
+                  height={140}
                   color="var(--signal-info)"
-                  fillOpacity={0.18}
-                  showBaseline
-                  thickness={1.4}
+                  yMin={0}
+                  yMax={100}
+                  threshold={85}
+                  gradientId="ndt-mem"
                 />
               </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Network ↑ · 1H" code="C · 03" action={<Etch>BYTES/S</Etch>}>
               <ChartOrEmpty empty={!haveLoadHistory}>
-                <Sparkline
+                <AreaChart
                   data={netUpHist}
                   width={400}
-                  height={120}
+                  height={140}
                   color="var(--accent-bright)"
-                  fillOpacity={0.18}
-                  showBaseline
-                  thickness={1.4}
+                  yMin={0}
+                  yMax={Math.max(...netUpHist, 1) * 1.2 || 1}
+                  gradientId="ndt-netup"
+                  formatY={(v) => formatBytesShort(v)}
                 />
               </ChartOrEmpty>
             </CardFrame>
             <CardFrame title="Network ↓ · 1H" code="C · 04" action={<Etch>BYTES/S</Etch>}>
               <ChartOrEmpty empty={!haveLoadHistory}>
-                <Sparkline
+                <AreaChart
                   data={netDownHist}
                   width={400}
-                  height={120}
+                  height={140}
                   color="var(--signal-good)"
-                  fillOpacity={0.18}
-                  showBaseline
-                  thickness={1.4}
+                  yMin={0}
+                  yMax={Math.max(...netDownHist, 1) * 1.2 || 1}
+                  gradientId="ndt-netdown"
+                  formatY={(v) => formatBytesShort(v)}
                 />
               </ChartOrEmpty>
             </CardFrame>
@@ -495,21 +544,12 @@ export function NodeDetailPage({
   )
 }
 
-interface BigMetricProps {
-  label: string
-  value: number | string
-  unit: string
-  progress?: number
-  status: 'good' | 'warn' | 'bad'
-  sub?: string
-}
-
 function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.ReactNode }) {
   if (empty) {
     return (
       <div
         style={{
-          height: 120,
+          height: 140,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -530,30 +570,45 @@ function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.Rea
   return <>{children}</>
 }
 
-function BigMetric({ label, value, unit, progress, status, sub }: BigMetricProps) {
+function SubLine({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-      <Etch>{label}</Etch>
-      <Numeric value={value} unit={unit} size={28} weight={500} />
-      {progress != null && <ProgressBar value={progress} status={status} height={4} />}
-      {sub && (
-        <span
-          style={{
-            fontSize: 10,
-            fontFamily: 'var(--font-mono)',
-            color: 'var(--fg-3)',
-            letterSpacing: '0.04em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={sub}
-        >
-          {sub}
-        </span>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          gap: 8,
+        }}
+      >
+        <Etch>{label}</Etch>
+        {sub && <Etch size={8}>{sub}</Etch>}
+      </div>
+      <span
+        className="mono tnum"
+        style={{
+          fontSize: 12,
+          color: 'var(--fg-1)',
+          letterSpacing: '-0.01em',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        title={String(value)}
+      >
+        {value}
+      </span>
     </div>
   )
+}
+
+/** Compact byte formatter for chart axis labels (no spaces, fewer chars). */
+function formatBytesShort(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0'
+  const units = ['B', 'K', 'M', 'G', 'T']
+  const idx = Math.min(Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)), units.length - 1)
+  const v = bytes / Math.pow(1024, idx)
+  return `${v.toFixed(idx === 0 ? 0 : 1)}${units[idx]}`
 }
 
 function ConnRow({ label, value }: { label: string; value: string | number }) {

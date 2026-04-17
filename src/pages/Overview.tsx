@@ -13,6 +13,7 @@ import { Numeric } from '@/components/atoms/Numeric'
 import { PingChart } from '@/components/charts/PingChart'
 import { BarChart } from '@/components/charts/BarChart'
 import { Footer } from '@/components/panels/Footer'
+import { hashFor } from '@/router/route'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
@@ -310,25 +311,35 @@ export function OverviewPage({
               }}
             >
               {filteredNodes.map((node) => (
-                <NodeCardCompact
+                <a
                   key={node.uuid}
-                  node={node}
-                  record={records[node.uuid]}
-                  netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                  pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
-                />
+                  href={hashFor({ name: 'nodes', uuid: node.uuid })}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                >
+                  <NodeCardCompact
+                    node={node}
+                    record={records[node.uuid]}
+                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
+                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                  />
+                </a>
               ))}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredNodes.map((node) => (
-                <NodeCardRow
+                <a
                   key={node.uuid}
-                  node={node}
-                  record={records[node.uuid]}
-                  netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                  pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
-                />
+                  href={hashFor({ name: 'nodes', uuid: node.uuid })}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                >
+                  <NodeCardRow
+                    node={node}
+                    record={records[node.uuid]}
+                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
+                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                  />
+                </a>
               ))}
             </div>
           )}
