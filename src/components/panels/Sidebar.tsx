@@ -2,35 +2,33 @@ import type { ReactNode } from 'react'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Icon } from '@/components/atoms/icons'
+import { hashFor, type Route } from '@/router/route'
 
 interface NavItem {
-  id: string
+  id: Route['name']
   label: string
   icon: ReactNode
-  disabled?: boolean
+  /** Pages that exist; others render as visible-but-disabled. */
+  enabled: boolean
 }
 
 const NAV: NavItem[] = [
-  { id: 'overview', label: 'Overview', icon: Icon.server },
-  { id: 'nodes', label: 'Nodes', icon: Icon.cpu, disabled: true },
-  { id: 'ping', label: 'Ping', icon: Icon.ping, disabled: true },
-  { id: 'traffic', label: 'Traffic', icon: Icon.net, disabled: true },
-  { id: 'map', label: 'Geo Map', icon: Icon.globe, disabled: true },
-  { id: 'alerts', label: 'Alerts', icon: Icon.alert, disabled: true },
-  { id: 'settings', label: 'Settings', icon: Icon.settings, disabled: true },
+  { id: 'overview', label: 'Overview', icon: Icon.server, enabled: true },
+  { id: 'nodes', label: 'Nodes', icon: Icon.cpu, enabled: true },
+  { id: 'ping', label: 'Ping', icon: Icon.ping, enabled: false },
+  { id: 'traffic', label: 'Traffic', icon: Icon.net, enabled: false },
+  { id: 'map', label: 'Geo Map', icon: Icon.globe, enabled: false },
+  { id: 'alerts', label: 'Alerts', icon: Icon.alert, enabled: false },
+  { id: 'settings', label: 'Settings', icon: Icon.settings, enabled: false },
 ]
 
 interface Props {
-  active?: string
+  active: Route['name']
   region?: string
   version?: string
 }
 
-/**
- * Sidebar — left rail with brand block, navigation, region/operator footer.
- * Disabled items are placeholders for future pages.
- */
-export function Sidebar({ active = 'overview', region = '岚 / RAN', version = 'v0.2.0' }: Props) {
+export function Sidebar({ active, region = '岚 / RAN', version = 'v0.4.0' }: Props) {
   return (
     <aside
       style={{
@@ -83,27 +81,34 @@ export function Sidebar({ active = 'overview', region = '岚 / RAN', version = '
       <nav style={{ display: 'flex', flexDirection: 'column', padding: 8, gap: 1 }}>
         {NAV.map((item) => {
           const isActive = active === item.id
+          const disabled = !item.enabled
+
+          const linkProps = disabled
+            ? { onClick: (e: React.MouseEvent) => e.preventDefault(), 'aria-disabled': true }
+            : {}
+
           return (
-            <button
+            <a
               key={item.id}
-              type="button"
-              disabled={item.disabled}
+              href={hashFor({ name: item.id } as Route)}
+              {...linkProps}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
                 padding: '7px 10px',
                 background: isActive ? 'var(--bg-3)' : 'transparent',
-                color: isActive ? 'var(--fg-0)' : item.disabled ? 'var(--fg-3)' : 'var(--fg-1)',
+                color: isActive ? 'var(--fg-0)' : disabled ? 'var(--fg-3)' : 'var(--fg-1)',
                 border: isActive ? '1px solid var(--edge-mid)' : '1px solid transparent',
                 borderRadius: 4,
-                cursor: item.disabled ? 'not-allowed' : 'pointer',
+                cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--font-sans)',
                 fontSize: 12,
                 textAlign: 'left',
                 position: 'relative',
                 boxShadow: isActive ? '0 1px 0 var(--edge-bright) inset' : 'none',
-                opacity: item.disabled ? 0.55 : 1,
+                opacity: disabled ? 0.55 : 1,
+                textDecoration: 'none',
               }}
             >
               {isActive && (
@@ -128,7 +133,7 @@ export function Sidebar({ active = 'overview', region = '岚 / RAN', version = '
                 {item.icon}
               </span>
               {item.label}
-            </button>
+            </a>
           )
         })}
       </nav>

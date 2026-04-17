@@ -12,6 +12,7 @@ import { Segmented } from '@/components/atoms/Segmented'
 import { Numeric } from '@/components/atoms/Numeric'
 import { PingChart } from '@/components/charts/PingChart'
 import { BarChart } from '@/components/charts/BarChart'
+import { Footer } from '@/components/panels/Footer'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
@@ -425,24 +426,7 @@ export function OverviewPage({
           </div>
         </main>
 
-        <footer
-          style={{
-            padding: '12px 20px',
-            borderTop: '1px solid var(--edge-engrave)',
-            background: 'var(--bg-1)',
-            color: 'var(--fg-3)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            textTransform: 'uppercase',
-            letterSpacing: '0.14em',
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginTop: 'auto',
-          }}
-        >
-          <span>岚 · KOMARI PROBE THEME · v0.3.0</span>
-          <span>POWERED BY KOMARI</span>
-        </footer>
+        <Footer />
       </div>
     </div>
   )

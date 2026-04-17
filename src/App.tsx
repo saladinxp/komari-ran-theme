@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { OverviewPage } from '@/pages/Overview'
+import { NodesPage } from '@/pages/Nodes'
+import { NodeDetailPage } from '@/pages/NodeDetail'
 import { useKomari } from '@/hooks/useKomari'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { ThemeCover } from '@/components/ThemeCover'
+import { useRoute } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
 
@@ -29,6 +32,7 @@ function isCoverMode(): boolean {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
+  const route = useRoute()
   const { nodes, records, config, conn, ping } = useKomari()
 
   useEffect(() => {
@@ -66,15 +70,45 @@ export default function App() {
 
   const siteName = config?.site_name ?? '岚 · Komari'
 
-  return (
-    <OverviewPage
-      nodes={displayNodes}
-      records={displayRecords}
-      theme={theme}
-      onTheme={setTheme}
-      siteName={siteName}
-      conn={conn}
-      ping={ping}
-    />
-  )
+  // Route dispatch
+  switch (route.name) {
+    case 'nodes':
+      if (route.uuid) {
+        return (
+          <NodeDetailPage
+            uuid={route.uuid}
+            nodes={displayNodes}
+            records={displayRecords}
+            theme={theme}
+            onTheme={setTheme}
+            siteName={siteName}
+            conn={conn}
+          />
+        )
+      }
+      return (
+        <NodesPage
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          conn={conn}
+        />
+      )
+
+    case 'overview':
+    default:
+      return (
+        <OverviewPage
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          conn={conn}
+          ping={ping}
+        />
+      )
+  }
 }
