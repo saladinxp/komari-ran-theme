@@ -29,7 +29,7 @@ function isCoverMode(): boolean {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
-  const { nodes, records, config, conn } = useKomari()
+  const { nodes, records, config, conn, ping } = useKomari()
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -74,6 +74,7 @@ export default function App() {
       onTheme={setTheme}
       siteName={siteName}
       conn={conn}
+      ping={ping}
     />
   )
 }

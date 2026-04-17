@@ -50,6 +50,38 @@ export async function fetchPublic(): Promise<KomariPublicConfig> {
   }
 }
 
+/** /api/records/ping?hours=N — global ping records across all nodes & tasks */
+export interface PingTask {
+  id: number
+  name: string
+  interval: number
+  loss: number
+}
+
+export interface PingRecord {
+  task_id: number
+  /** ISO 8601 timestamp */
+  time: string
+  /** Latency in ms */
+  value: number
+  /** Optional uuid — present when fetched without uuid filter */
+  client?: string
+}
+
+export interface PingHistory {
+  count: number
+  tasks: PingTask[]
+  records: PingRecord[]
+}
+
+export async function fetchPingHistory(hours = 1): Promise<PingHistory> {
+  try {
+    return await getJson<PingHistory>(`/api/records/ping?hours=${hours}`)
+  } catch {
+    return { count: 0, tasks: [], records: [] }
+  }
+}
+
 export interface LiveSocket {
   close: () => void
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchNodes, fetchPublic, openLiveSocket } from '@/api/client'
+import { fetchNodes, fetchPingHistory, fetchPublic, openLiveSocket } from '@/api/client'
+import type { PingHistory } from '@/api/client'
 import { makeOfflineRecord, normalizeNode, normalizeWsRecord } from '@/api/normalize'
 import type {
   KomariNode,
@@ -16,6 +17,7 @@ interface KomariState {
   config: KomariPublicConfig
   conn: ConnStatus
   error: string | null
+  ping: PingHistory
 }
 
 const INITIAL: KomariState = {
@@ -24,11 +26,13 @@ const INITIAL: KomariState = {
   config: {},
   conn: 'idle',
   error: null,
+  ping: { count: 0, tasks: [], records: [] },
 }
 
 /**
- * useKomari — wires REST node list + WS live records.
- * Reconnects automatically. Marks any node not in `online[]` as offline.
+ * useKomari — wires REST node list + WS live records + periodic ping fetch.
+ * - WS reconnects automatically. Nodes not in `online[]` are marked offline.
+ * - Ping history refreshes every 60s; covers the last 1 hour of all targets.
  */
 export function useKomari(): KomariState {
   const [state, setState] = useState<KomariState>(INITIAL)
@@ -46,6 +50,15 @@ export function useKomari(): KomariState {
         if (cancelled) return
         setState((prev) => ({ ...prev, error: String(err) }))
       })
+
+    const refreshPing = () => {
+      fetchPingHistory(1).then((ping) => {
+        if (cancelled) return
+        setState((prev) => ({ ...prev, ping }))
+      })
+    }
+    refreshPing()
+    const pingTimer = setInterval(refreshPing, 60_000)
 
     const sock = openLiveSocket({
       onStatus: (conn) => {
@@ -73,6 +86,7 @@ export function useKomari(): KomariState {
 
     return () => {
       cancelled = true
+      clearInterval(pingTimer)
       sock.close()
     }
   }, [])

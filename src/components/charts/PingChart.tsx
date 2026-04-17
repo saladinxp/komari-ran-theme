@@ -7,6 +7,7 @@ interface Props {
   series: Series[]
   width?: number
   height?: number
+  /** When undefined, computed from series max with a 20% margin. */
   yMax?: number
 }
 
@@ -21,15 +22,31 @@ const X_LABELS = ['-1h', '-50m', '-40m', '-30m', '-20m', '-10m', 'now']
 
 /**
  * PingChart — multiple latency series over a 1h window.
- * Y axis labeled in ms, X axis at -1h / -50m / -40m / ... / now.
+ * Y axis labeled in ms, X axis at -1h / -50m / .../ now. Optional legend
+ * row shows series labels (e.g. ping target names).
  */
-export function PingChart({ series, width = 480, height = 160, yMax = 200 }: Props) {
+export function PingChart({ series, width = 480, height = 160, yMax }: Props) {
   if (!series.length || !series[0].data.length) {
     return <div style={{ width, height, background: 'var(--bg-inset)' }} />
   }
+
+  // Auto Y scale if not provided — find max across all series, round up to nice value
+  const computedYMax =
+    yMax ??
+    (() => {
+      let m = 0
+      for (const s of series) for (const v of s.data) if (v > m) m = v
+      m = Math.max(50, m * 1.2)
+      // round to nearest 25
+      return Math.ceil(m / 25) * 25
+    })()
+
+  const hasLegend = series.some((s) => s.label)
+  const legendH = hasLegend ? 18 : 0
+
   const pad = { top: 14, right: 44, bottom: 22, left: 8 }
   const innerW = width - pad.left - pad.right
-  const innerH = height - pad.top - pad.bottom
+  const innerH = height - pad.top - pad.bottom - legendH
   const stepX = innerW / Math.max(1, series[0].data.length - 1)
 
   return (
@@ -57,7 +74,7 @@ export function PingChart({ series, width = 480, height = 160, yMax = 200 }: Pro
               fontFamily="var(--font-mono)"
               letterSpacing="0.1em"
             >
-              {Math.round(yMax - (i / 4) * yMax)}ms
+              {Math.round(computedYMax - (i / 4) * computedYMax)}ms
             </text>
           </g>
         )
@@ -79,8 +96,12 @@ export function PingChart({ series, width = 480, height = 160, yMax = 200 }: Pro
         const c = COLORS[si % COLORS.length]
         const pts = s.data.map(
           (d, i) =>
-            [pad.left + i * stepX, pad.top + innerH - (Math.min(yMax, d) / yMax) * innerH] as [number, number],
+            [
+              pad.left + i * stepX,
+              pad.top + innerH - (Math.min(computedYMax, d) / computedYMax) * innerH,
+            ] as [number, number],
         )
+        // Skip zero-only segments to avoid baseline noise when target hadn't reported
         const path = pts
           .map((p, i) => (i === 0 ? `M${p[0]},${p[1]}` : `L${p[0]},${p[1]}`))
           .join(' ')
@@ -99,6 +120,7 @@ export function PingChart({ series, width = 480, height = 160, yMax = 200 }: Pro
           </g>
         )
       })}
+      {/* X labels */}
       {X_LABELS.map((l, i) => (
         <text
           key={`x${i}`}
@@ -113,6 +135,30 @@ export function PingChart({ series, width = 480, height = 160, yMax = 200 }: Pro
           {l}
         </text>
       ))}
+      {/* Legend */}
+      {hasLegend &&
+        series.map((s, si) => {
+          const c = COLORS[si % COLORS.length]
+          // Distribute legend items across the chart width
+          const itemW = innerW / Math.max(1, series.length)
+          const x = pad.left + si * itemW + 4
+          const y = height - 4
+          return (
+            <g key={`lg${si}`}>
+              <rect x={x} y={y - 8} width={8} height={2} fill={c} />
+              <text
+                x={x + 12}
+                y={y - 1}
+                fontSize="9"
+                fill="var(--fg-2)"
+                fontFamily="var(--font-mono)"
+                letterSpacing="0.06em"
+              >
+                {(s.label ?? '').slice(0, Math.floor(itemW / 6))}
+              </text>
+            </g>
+          )
+        })}
     </svg>
   )
 }

@@ -13,6 +13,8 @@ import { Numeric } from '@/components/atoms/Numeric'
 import { PingChart } from '@/components/charts/PingChart'
 import { BarChart } from '@/components/charts/BarChart'
 import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { PingHistory } from '@/api/client'
+import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { genSeries } from '@/utils/series'
 import { formatBytes } from '@/utils/format'
 
@@ -28,6 +30,7 @@ interface Props {
   onTheme: (t: Theme) => void
   siteName?: string
   conn?: Conn
+  ping?: PingHistory
 }
 
 export function OverviewPage({
@@ -37,6 +40,7 @@ export function OverviewPage({
   onTheme,
   siteName = '岚 · Komari',
   conn = 'idle',
+  ping,
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
@@ -170,13 +174,15 @@ export function OverviewPage({
     return out
   }, [nodes, records])
 
-  const pingSeries = useMemo(() => {
-    const onlineNodes = nodes.filter((n) => records[n.uuid]?.online).slice(0, 4)
-    return onlineNodes.map((n, i) => ({
-      data: genSeries(60, hashSeed(n.uuid) + i, 40 + i * 20, 30),
-      label: n.name,
-    }))
-  }, [nodes, records])
+  // ── Ping series — global mean latency per target, derived from records/ping ──
+  const pingTargets = useMemo(
+    () => (ping && hasPingData(ping) ? aggregatePingByTarget(ping, 60, 60 * 60 * 1000, 4) : []),
+    [ping],
+  )
+  const pingSeries = useMemo(
+    () => pingTargets.map((t) => ({ data: t.data, label: t.task.name })),
+    [pingTargets],
+  )
 
   const trafficSeries = useMemo(() => genSeries(30, 31, 60, 30).map(Math.round), [])
 
@@ -344,12 +350,18 @@ export function OverviewPage({
             </CardFrame>
 
             <CardFrame
-              title="Ping · 1H"
+              title="测速点延迟 · 1H"
               code="P · 06"
-              action={<Etch>{`${pingSeries.length} TARGETS`}</Etch>}
+              action={
+                <Etch>
+                  {pingSeries.length > 0
+                    ? `${pingSeries.length} TARGET${pingSeries.length === 1 ? '' : 'S'}`
+                    : 'NO TARGETS'}
+                </Etch>
+              }
             >
               {pingSeries.length > 0 ? (
-                <PingChart series={pingSeries} width={340} height={140} yMax={180} />
+                <PingChart series={pingSeries} width={340} height={140} />
               ) : (
                 <div
                   style={{
@@ -360,9 +372,14 @@ export function OverviewPage({
                     fontSize: 11,
                     letterSpacing: '0.14em',
                     textTransform: 'uppercase',
+                    lineHeight: 1.6,
                   }}
                 >
-                  NO ONLINE TARGETS
+                  尚未配置测速点
+                  <br />
+                  <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                    add ping tasks in komari admin
+                  </span>
                 </div>
               )}
             </CardFrame>
