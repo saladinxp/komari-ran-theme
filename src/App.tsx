@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { OverviewPage } from '@/pages/Overview'
 import { NodesPage } from '@/pages/Nodes'
 import { NodeDetailPage } from '@/pages/NodeDetail'
+import { TrafficPage } from '@/pages/Traffic'
 import { useKomari } from '@/hooks/useKomari'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { ThemeCover } from '@/components/ThemeCover'
@@ -88,6 +89,18 @@ export default function App() {
       }
       return (
         <NodesPage
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          conn={conn}
+        />
+      )
+
+    case 'traffic':
+      return (
+        <TrafficPage
           nodes={displayNodes}
           records={displayRecords}
           theme={theme}
