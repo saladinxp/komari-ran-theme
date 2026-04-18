@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { CardFrame } from '@/components/panels/CardFrame'
@@ -7,12 +7,13 @@ import { Etch } from '@/components/atoms/Etch'
 import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
+import { StatusDot } from '@/components/atoms/StatusDot'
+import { Tabs } from '@/components/atoms/Tabs'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { PingChart } from '@/components/charts/PingChart'
 import { RadialGauge } from '@/components/charts/RadialGauge'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import {
-  formatBps,
   formatBytes,
   formatPercent,
   formatUptime,
@@ -49,6 +50,7 @@ export function NodeDetailPage({
 }: Props) {
   // Hooks must be called before any early return.
   const history = useNodeHistory(uuid, 1)
+  const [tab, setTab] = useState<'overview' | 'latency'>('overview')
 
   const node = useMemo(() => nodes.find((n) => n.uuid === uuid), [nodes, uuid])
   const record = node ? records[node.uuid] : undefined
@@ -151,6 +153,12 @@ export function NodeDetailPage({
   const netDownHist = buckets.netIn
 
   // Specs strip
+  // Try to extract kernel from os string (e.g. "Debian GNU/Linux 13 · 6.1.0-26 · amd64").
+  const osStr = record?.os ?? node.os ?? ''
+  const osParts = osStr.split(/[·•]/).map((s) => s.trim()).filter(Boolean)
+  const osBase = osParts[0] || '—'
+  const kernelHint = osParts.find((p) => /^\d+\.\d+/.test(p))
+
   const specs = [
     {
       label: 'CPU',
@@ -165,7 +173,7 @@ export function NodeDetailPage({
     {
       label: 'STORAGE',
       value: record?.disk_total ? formatBytes(record.disk_total) : '—',
-      sub: undefined,
+      sub: node.arch ?? undefined,
     },
     {
       label: 'NETWORK',
@@ -173,9 +181,9 @@ export function NodeDetailPage({
       sub: labels.traffic ? `LIMIT ${labels.traffic.value}` : undefined,
     },
     {
-      label: 'OS',
-      value: (record?.os ?? node.os ?? '—').split('·')[0].trim(),
-      sub: node.arch ?? undefined,
+      label: 'OS · KERNEL',
+      value: osBase,
+      sub: kernelHint,
     },
     {
       label: 'EXPIRE',
@@ -332,210 +340,268 @@ export function NodeDetailPage({
             />
           </div>
 
-          {/* Sub-metrics row — used / total for memory, disk, load triplet */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 12,
-              padding: '10px 16px',
-              background: 'var(--bg-1)',
-              border: '1px solid var(--edge-engrave)',
-              borderRadius: 'var(--radius-sm)',
-            }}
-          >
-            <SubLine
-              label="CPU"
-              value={online && record?.cpu != null ? `${record.cpu.toFixed(1)}%` : '—'}
-              sub={node.cpu_cores ? `${node.cpu_cores}-CORE` : undefined}
-            />
-            <SubLine
-              label="MEMORY"
-              value={
-                online && record?.memory_used != null && record?.memory_total
-                  ? `${formatBytes(record.memory_used)} / ${formatBytes(record.memory_total)}`
-                  : '—'
-              }
-            />
-            <SubLine
-              label="DISK"
-              value={
-                online && record?.disk_used != null && record?.disk_total
-                  ? `${formatBytes(record.disk_used)} / ${formatBytes(record.disk_total)}`
-                  : '—'
-              }
-            />
-            <SubLine
-              label="NET ↑/↓"
-              value={online ? `${formatBps(record?.network_tx)} / ${formatBps(record?.network_rx)}` : '—'}
-            />
-            <SubLine
-              label="LOAD 1/5/15"
-              value={
-                online && record?.load1 != null
-                  ? `${record.load1.toFixed(2)} / ${record.load5?.toFixed(2) ?? '—'} / ${record.load15?.toFixed(2) ?? '—'}`
-                  : '—'
-              }
-            />
-          </div>
+          {/* Tabs separator */}
+          <Tabs
+            tabs={[
+              { id: 'overview', label: 'Overview' },
+              {
+                id: 'latency',
+                label: '测速点延迟',
+                badge:
+                  pingSeries.length > 0 ? (
+                    <SerialPlate>{pingSeries.length}</SerialPlate>
+                  ) : null,
+              },
+            ]}
+            active={tab}
+            onChange={(t) => setTab(t as 'overview' | 'latency')}
+          />
 
-          {/* Charts grid — real history from /api/records/load */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-              gap: 16,
-            }}
-          >
-            <CardFrame
-              title="CPU · 1H"
-              code="C · 01"
-              action={<Etch>{haveLoadHistory ? `${history.load.count} SAMPLES` : history.loading ? 'LOADING' : 'NO DATA'}</Etch>}
-            >
-              <ChartOrEmpty empty={!haveLoadHistory}>
-                <AreaChart
-                  data={cpuHist}
-                  width={400}
-                  height={140}
-                  color="var(--accent)"
-                  yMin={0}
-                  yMax={100}
-                  threshold={80}
-                  gradientId="ndt-cpu"
-                />
-              </ChartOrEmpty>
-            </CardFrame>
-            <CardFrame title="Memory · 1H" code="C · 02">
-              <ChartOrEmpty empty={!haveLoadHistory}>
-                <AreaChart
-                  data={memHist}
-                  width={400}
-                  height={140}
-                  color="var(--signal-info)"
-                  yMin={0}
-                  yMax={100}
-                  threshold={85}
-                  gradientId="ndt-mem"
-                />
-              </ChartOrEmpty>
-            </CardFrame>
-            <CardFrame title="Network ↑ · 1H" code="C · 03" action={<Etch>BYTES/S</Etch>}>
-              <ChartOrEmpty empty={!haveLoadHistory}>
-                <AreaChart
-                  data={netUpHist}
-                  width={400}
-                  height={140}
-                  color="var(--accent-bright)"
-                  yMin={0}
-                  yMax={Math.max(...netUpHist, 1) * 1.2 || 1}
-                  gradientId="ndt-netup"
-                  formatY={(v) => formatBytesShort(v)}
-                />
-              </ChartOrEmpty>
-            </CardFrame>
-            <CardFrame title="Network ↓ · 1H" code="C · 04" action={<Etch>BYTES/S</Etch>}>
-              <ChartOrEmpty empty={!haveLoadHistory}>
-                <AreaChart
-                  data={netDownHist}
-                  width={400}
-                  height={140}
-                  color="var(--signal-good)"
-                  yMin={0}
-                  yMax={Math.max(...netDownHist, 1) * 1.2 || 1}
-                  gradientId="ndt-netdown"
-                  formatY={(v) => formatBytesShort(v)}
-                />
-              </ChartOrEmpty>
-            </CardFrame>
-          </div>
-
-          {/* Per-node ping — this probe → each speed-test target */}
-          <CardFrame
-            title="测速点延迟 · 1H"
-            code="P · 06"
-            action={
-              <Etch>
-                {pingSeries.length > 0
-                  ? `${pingSeries.length} TARGET${pingSeries.length === 1 ? '' : 'S'}`
-                  : history.loading
-                    ? 'LOADING'
-                    : 'NO TARGETS'}
-              </Etch>
-            }
-          >
-            {pingSeries.length > 0 ? (
-              <PingChart series={pingSeries} width={800} height={170} />
-            ) : (
+          {tab === 'overview' && (
+            <>
+              {/* Charts grid — 2×2, real history from /api/records/load */}
               <div
                 style={{
-                  padding: '40px 16px',
-                  textAlign: 'center',
-                  color: 'var(--fg-3)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.6,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 16,
                 }}
               >
-                {history.loading ? '加载中…' : '该节点无测速点数据'}
-                {!history.loading && (
-                  <>
-                    <br />
-                    <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
-                      configure ping tasks in komari admin
-                    </span>
-                  </>
-                )}
+                <CardFrame
+                  title="CPU · 1H"
+                  code="C · 01"
+                  action={
+                    <Etch>
+                      {haveLoadHistory
+                        ? `${history.load.count} SAMPLES`
+                        : history.loading
+                          ? 'LOADING'
+                          : 'NO DATA'}
+                    </Etch>
+                  }
+                >
+                  <ChartOrEmpty empty={!haveLoadHistory}>
+                    <AreaChart
+                      data={cpuHist}
+                      width={400}
+                      height={150}
+                      color="var(--accent)"
+                      yMin={0}
+                      yMax={100}
+                      threshold={80}
+                      gradientId="ndt-cpu"
+                    />
+                  </ChartOrEmpty>
+                </CardFrame>
+                <CardFrame title="Memory · 1H" code="C · 02">
+                  <ChartOrEmpty empty={!haveLoadHistory}>
+                    <AreaChart
+                      data={memHist}
+                      width={400}
+                      height={150}
+                      color="var(--signal-info)"
+                      yMin={0}
+                      yMax={100}
+                      threshold={85}
+                      gradientId="ndt-mem"
+                    />
+                  </ChartOrEmpty>
+                </CardFrame>
+                <CardFrame
+                  title="Disk · 1H"
+                  code="C · 03"
+                  action={<Etch>USAGE %</Etch>}
+                >
+                  <ChartOrEmpty empty={!haveLoadHistory}>
+                    <AreaChart
+                      data={buckets.disk}
+                      width={400}
+                      height={150}
+                      color="var(--signal-good)"
+                      yMin={0}
+                      yMax={100}
+                      threshold={85}
+                      gradientId="ndt-disk"
+                    />
+                  </ChartOrEmpty>
+                </CardFrame>
+                <CardFrame
+                  title="Network · 1H"
+                  code="C · 04"
+                  action={<Etch>↑ / ↓ BYTES/S</Etch>}
+                >
+                  <ChartOrEmpty empty={!haveLoadHistory}>
+                    <DualNetChart up={netUpHist} down={netDownHist} />
+                  </ChartOrEmpty>
+                </CardFrame>
               </div>
-            )}
-          </CardFrame>
 
+              {/* Bottom row — Connections (typed counts) / Traffic / Latency */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 16,
+                }}
+              >
+                <CardFrame title="Connections" code="P · 11" action={<Etch>BY KIND</Etch>}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {[
+                      {
+                        l: 'TCP',
+                        v: record?.tcp != null ? record.tcp.toLocaleString() : '—',
+                        s: 'good',
+                      },
+                      {
+                        l: 'UDP',
+                        v: record?.udp != null ? record.udp.toLocaleString() : '—',
+                        s: 'info',
+                      },
+                      {
+                        l: 'PROCESSES',
+                        v: record?.process != null ? record.process.toLocaleString() : '—',
+                        s: (record?.process ?? 0) > 500 ? 'warn' : 'good',
+                      },
+                    ].map((x, i) => (
+                      <div
+                        key={x.l}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 0',
+                          borderBottom: i < 2 ? '1px solid var(--edge-engrave)' : 'none',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <StatusDot status={x.s as 'good' | 'warn' | 'info'} size={5} />
+                          <span style={{ fontSize: 11, color: 'var(--fg-1)' }}>{x.l}</span>
+                        </div>
+                        <Numeric value={x.v} size={14} />
+                      </div>
+                    ))}
+                    <div className="seam" style={{ margin: '6px 0' }} />
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                      }}
+                    >
+                      <Etch>TOTAL</Etch>
+                      <Numeric
+                        value={(
+                          (record?.tcp ?? 0) +
+                          (record?.udp ?? 0)
+                        ).toLocaleString()}
+                        size={20}
+                      />
+                    </div>
+                  </div>
+                </CardFrame>
 
-          {/* Connections + Traffic totals */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: 16,
-            }}
-          >
-            <CardFrame title="Connections" code="P · 11">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <ConnRow label="TCP" value={record?.tcp ?? '—'} />
-                <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
-                <ConnRow label="UDP" value={record?.udp ?? '—'} />
-                <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
-                <ConnRow label="PROCESSES" value={record?.process ?? '—'} />
+                <CardFrame title="Traffic" code="T · 11" action={<Etch>SINCE BOOT</Etch>}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <ConnRow
+                      label="↑ TX"
+                      value={online ? formatBytes(record?.network_total_up) : '—'}
+                    />
+                    <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
+                    <ConnRow
+                      label="↓ RX"
+                      value={online ? formatBytes(record?.network_total_down) : '—'}
+                    />
+                    <div className="seam" style={{ margin: '6px 0' }} />
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                      }}
+                    >
+                      <Etch>TOTAL</Etch>
+                      <Numeric
+                        value={formatBytes(
+                          (record?.network_total_up ?? 0) + (record?.network_total_down ?? 0),
+                        )}
+                        size={16}
+                      />
+                    </div>
+                  </div>
+                </CardFrame>
+
+                <CardFrame title="Latency" code="L · 11">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <ConnRow
+                      label="LATENCY"
+                      value={
+                        online && record?.ping != null ? `${Math.round(record.ping)} ms` : '—'
+                      }
+                    />
+                    <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
+                    <ConnRow label="PACKET LOSS" value={formatPercent(record?.loss, 1)} />
+                    <div className="seam" style={{ margin: '6px 0' }} />
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                      }}
+                    >
+                      <Etch>UPTIME</Etch>
+                      <Numeric
+                        value={online ? formatUptime(record?.uptime) : '—'}
+                        size={14}
+                      />
+                    </div>
+                  </div>
+                </CardFrame>
               </div>
+            </>
+          )}
+
+          {tab === 'latency' && (
+            <CardFrame
+              title="测速点延迟 · 1H"
+              code="P · 06"
+              action={
+                <Etch>
+                  {pingSeries.length > 0
+                    ? `${pingSeries.length} TARGET${pingSeries.length === 1 ? '' : 'S'}`
+                    : history.loading
+                      ? 'LOADING'
+                      : 'NO TARGETS'}
+                </Etch>
+              }
+            >
+              {pingSeries.length > 0 ? (
+                <PingChart series={pingSeries} width={1000} height={280} />
+              ) : (
+                <div
+                  style={{
+                    padding: '60px 16px',
+                    textAlign: 'center',
+                    color: 'var(--fg-3)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    lineHeight: 1.8,
+                  }}
+                >
+                  {history.loading ? '加载中…' : '该节点无测速点数据'}
+                  {!history.loading && (
+                    <>
+                      <br />
+                      <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                        configure ping tasks in komari admin
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             </CardFrame>
-            <CardFrame title="Traffic Total" code="T · 11" action={<Etch>SINCE BOOT</Etch>}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <ConnRow
-                  label="↑ TX"
-                  value={online ? formatBytes(record?.network_total_up) : '—'}
-                />
-                <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
-                <ConnRow
-                  label="↓ RX"
-                  value={online ? formatBytes(record?.network_total_down) : '—'}
-                />
-              </div>
-            </CardFrame>
-            <CardFrame title="Latency" code="L · 11">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <ConnRow
-                  label="LATENCY"
-                  value={online && record?.ping != null ? `${Math.round(record.ping)} ms` : '—'}
-                />
-                <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
-                <ConnRow
-                  label="PACKET LOSS"
-                  value={formatPercent(record?.loss, 1)}
-                />
-              </div>
-            </CardFrame>
-          </div>
+          )}
         </main>
 
         <Footer />
@@ -549,7 +615,7 @@ function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.Rea
     return (
       <div
         style={{
-          height: 140,
+          height: 150,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -570,34 +636,83 @@ function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.Rea
   return <>{children}</>
 }
 
-function SubLine({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+/** Network ↑/↓ overlaid in one chart with mirrored emphasis. */
+function DualNetChart({ up, down }: { up: number[]; down: number[] }) {
+  const maxV = Math.max(...up, ...down, 1)
+  const yMax = maxV * 1.2 || 1
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+    <div style={{ position: 'relative' }}>
+      <AreaChart
+        data={up}
+        width={400}
+        height={150}
+        color="var(--accent-bright)"
+        yMin={0}
+        yMax={yMax}
+        gradientId="ndt-netup"
+        formatY={(v) => formatBytesShort(v)}
+      />
       <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          gap: 8,
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          mixBlendMode: 'normal',
         }}
       >
-        <Etch>{label}</Etch>
-        {sub && <Etch size={8}>{sub}</Etch>}
+        <AreaChart
+          data={down}
+          width={400}
+          height={150}
+          color="var(--signal-good)"
+          yMin={0}
+          yMax={yMax}
+          gradientId="ndt-netdown"
+          formatY={(v) => formatBytesShort(v)}
+        />
       </div>
-      <span
-        className="mono tnum"
+      {/* Legend */}
+      <div
         style={{
-          fontSize: 12,
-          color: 'var(--fg-1)',
-          letterSpacing: '-0.01em',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          position: 'absolute',
+          top: 6,
+          left: 12,
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9,
+          color: 'var(--fg-2)',
+          letterSpacing: '0.1em',
+          background: 'var(--bg-1)',
+          padding: '2px 6px',
+          border: '1px solid var(--edge-engrave)',
+          borderRadius: 2,
         }}
-        title={String(value)}
       >
-        {value}
-      </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span
+            style={{
+              width: 8,
+              height: 2,
+              background: 'var(--accent-bright)',
+              boxShadow: '0 0 3px var(--accent-bright)',
+            }}
+          />
+          ↑ TX
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span
+            style={{
+              width: 8,
+              height: 2,
+              background: 'var(--signal-good)',
+              boxShadow: '0 0 3px var(--signal-good)',
+            }}
+          />
+          ↓ RX
+        </span>
+      </div>
     </div>
   )
 }
