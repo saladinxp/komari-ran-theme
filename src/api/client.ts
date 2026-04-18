@@ -135,7 +135,8 @@ export interface LiveSocket {
 }
 
 /**
- * WebSocket /api/clients — sends "get" on open and receives live updates.
+ * WebSocket /api/clients — sends "get" on open + every second to poll for updates.
+ * Komari's WS is request-response style, not streaming, so we have to poll.
  * Reconnects with exponential backoff up to 15s.
  */
 export function openLiveSocket(opts: {
@@ -145,7 +146,15 @@ export function openLiveSocket(opts: {
   let ws: WebSocket | null = null
   let closed = false
   let timer: ReturnType<typeof setTimeout> | null = null
+  let pollTimer: ReturnType<typeof setInterval> | null = null
   let attempt = 0
+
+  const stopPoll = () => {
+    if (pollTimer) {
+      clearInterval(pollTimer)
+      pollTimer = null
+    }
+  }
 
   const connect = () => {
     if (closed) return
@@ -165,6 +174,17 @@ export function openLiveSocket(opts: {
       } catch {
         /* ignore */
       }
+      // Poll every 1s — Komari WS doesn't push, it replies on demand.
+      stopPoll()
+      pollTimer = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send('get')
+          } catch {
+            /* ignore */
+          }
+        }
+      }, 1000)
     }
     ws.onmessage = (ev) => {
       try {
@@ -176,6 +196,7 @@ export function openLiveSocket(opts: {
     }
     ws.onerror = () => opts.onStatus?.('error')
     ws.onclose = () => {
+      stopPoll()
       opts.onStatus?.('closed')
       schedule()
     }
@@ -193,6 +214,7 @@ export function openLiveSocket(opts: {
   return {
     close: () => {
       closed = true
+      stopPoll()
       if (timer) clearTimeout(timer)
       ws?.close()
     },
