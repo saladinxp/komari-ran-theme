@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { CardFrame } from '@/components/panels/CardFrame'
 import { NodeCardRow } from '@/components/cards/NodeCardRow'
+import { NodeCardCompact } from '@/components/cards/NodeCardCompact'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
@@ -15,6 +16,7 @@ import { Footer } from '@/components/panels/Footer'
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type Filter = 'all' | 'on' | 'warn' | 'off'
+type View = 'grid' | 'row'
 type SortBy = 'name' | 'region' | 'cpu' | 'mem' | 'load' | 'expire'
 
 interface Props {
@@ -36,6 +38,7 @@ export function NodesPage({
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
+  const [view, setView] = useState<View>('grid')
 
   const filtered = useMemo(() => {
     const list = nodes.filter((n) => {
@@ -121,9 +124,18 @@ export function NodesPage({
                 Nodes
               </h2>
               <SerialPlate>{`SHOWN ${filtered.length}/${nodes.length}`}</SerialPlate>
-              <Etch>BY {sortBy.toUpperCase()}</Etch>
+              <Etch>{view === 'grid' ? 'GRID' : 'ROW'} · BY {sortBy.toUpperCase()}</Etch>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Segmented
+                size="sm"
+                value={view}
+                onChange={(v) => setView(v as View)}
+                options={[
+                  { value: 'grid', label: 'GRID' },
+                  { value: 'row', label: 'ROW' },
+                ]}
+              />
               <Segmented
                 size="sm"
                 value={filter}
@@ -168,6 +180,29 @@ export function NodesPage({
                 {nodes.length === 0 ? 'NO NODES CONFIGURED' : 'NO NODES MATCH FILTER'}
               </div>
             </CardFrame>
+          ) : view === 'grid' ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: 14,
+              }}
+            >
+              {filtered.map((node) => (
+                <a
+                  key={node.uuid}
+                  href={hashFor({ name: 'nodes', uuid: node.uuid })}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                >
+                  <NodeCardCompact
+                    node={node}
+                    record={records[node.uuid]}
+                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
+                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                  />
+                </a>
+              ))}
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filtered.map((node) => (
