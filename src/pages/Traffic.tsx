@@ -28,6 +28,7 @@ interface Props {
   onTheme: (t: Theme) => void
   siteName?: string
   conn?: Conn
+  lastUpdate?: number | null
 }
 
 interface NodeTraffic {
@@ -50,6 +51,7 @@ export function TrafficPage({
   onTheme,
   siteName = '岚 · Komari',
   conn = 'idle',
+  lastUpdate,
 }: Props) {
   const [windowSize, setWindowSize] = useState<Window>('24h')
   const [sortBy, setSortBy] = useState<SortBy>('total')
@@ -178,6 +180,7 @@ export function TrafficPage({
           onTheme={onTheme}
           online={globalOnline}
           total={nodes.length}
+          lastUpdate={lastUpdate}
           conn={conn}
         />
 

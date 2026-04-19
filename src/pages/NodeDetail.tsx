@@ -36,6 +36,7 @@ interface Props {
   theme: Theme
   onTheme: (t: Theme) => void
   conn?: Conn
+  lastUpdate?: number | null
   siteName?: string
 }
 
@@ -46,6 +47,7 @@ export function NodeDetailPage({
   theme,
   onTheme,
   conn = 'idle',
+  lastUpdate,
   siteName = '岚 · Komari',
 }: Props) {
   // Hooks must be called before any early return.
@@ -86,6 +88,7 @@ export function NodeDetailPage({
             onTheme={onTheme}
             online={0}
             total={0}
+            lastUpdate={lastUpdate}
             conn={conn}
           />
           <main style={{ flex: 1, padding: 20 }}>
@@ -211,6 +214,7 @@ export function NodeDetailPage({
           onTheme={onTheme}
           online={globalOnline}
           total={nodes.length}
+          lastUpdate={lastUpdate}
           conn={conn}
         />
 
@@ -561,46 +565,76 @@ export function NodeDetailPage({
           )}
 
           {tab === 'latency' && (
-            <CardFrame
-              title="测速点延迟 · 1H"
-              code="P · 06"
-              action={
-                <Etch>
-                  {pingSeries.length > 0
-                    ? `${pingSeries.length} TARGET${pingSeries.length === 1 ? '' : 'S'}`
-                    : history.loading
-                      ? 'LOADING'
-                      : 'NO TARGETS'}
-                </Etch>
-              }
-            >
-              {pingSeries.length > 0 ? (
-                <PingChart series={pingSeries} width={1000} height={280} />
+            <>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  marginBottom: 4,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    测速点延迟 · 1H
+                  </h3>
+                  <SerialPlate>
+                    {pingTargets.length > 0
+                      ? `${pingTargets.length} TARGET${pingTargets.length === 1 ? '' : 'S'}`
+                      : history.loading
+                        ? 'LOADING'
+                        : 'NO TARGETS'}
+                  </SerialPlate>
+                </div>
+                <Etch>SAMPLED FROM THIS PROBE</Etch>
+              </div>
+
+              {pingTargets.length === 0 ? (
+                <CardFrame title="No ping data" code="∅">
+                  <div
+                    style={{
+                      padding: '60px 16px',
+                      textAlign: 'center',
+                      color: 'var(--fg-3)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {history.loading ? '加载中…' : '该节点无测速点数据'}
+                    {!history.loading && (
+                      <>
+                        <br />
+                        <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                          configure ping tasks in komari admin
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </CardFrame>
               ) : (
                 <div
                   style={{
-                    padding: '60px 16px',
-                    textAlign: 'center',
-                    color: 'var(--fg-3)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    lineHeight: 1.8,
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: 14,
                   }}
                 >
-                  {history.loading ? '加载中…' : '该节点无测速点数据'}
-                  {!history.loading && (
-                    <>
-                      <br />
-                      <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
-                        configure ping tasks in komari admin
-                      </span>
-                    </>
-                  )}
+                  {pingTargets.map((t, i) => (
+                    <PingTargetCard key={t.task.id} target={t} index={i} />
+                  ))}
                 </div>
               )}
-            </CardFrame>
+            </>
           )}
         </main>
 
@@ -724,6 +758,126 @@ function formatBytesShort(bytes: number): string {
   const idx = Math.min(Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)), units.length - 1)
   const v = bytes / Math.pow(1024, idx)
   return `${v.toFixed(idx === 0 ? 0 : 1)}${units[idx]}`
+}
+
+/** A single ping target — name, current value, loss%, and a 1H mini area chart. */
+function PingTargetCard({
+  target,
+  index,
+}: {
+  target: { task: { id: number; name: string; loss: number; interval: number }; data: number[]; latest?: number }
+  index: number
+}) {
+  const colors = ['var(--accent)', 'var(--signal-info)', 'var(--signal-good)', 'var(--accent-bright)']
+  const color = colors[index % colors.length]
+  const latest = target.latest
+  const loss = target.task.loss ?? 0
+
+  // Auto y-scale based on this target's actual values
+  const peak = Math.max(...target.data, 1)
+  const yMax = Math.ceil((peak * 1.3) / 10) * 10 || 50
+
+  // Status from loss + latency
+  const lossStatus: 'good' | 'warn' | 'bad' = loss > 10 ? 'bad' : loss > 2 ? 'warn' : 'good'
+
+  return (
+    <div
+      className="precision-card"
+      style={{ display: 'flex', flexDirection: 'column' }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 12px',
+          borderBottom: '1px solid var(--edge-engrave)',
+          background: 'var(--bg-1)',
+          gap: 8,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              background: color,
+              boxShadow: `0 0 6px ${color}`,
+              borderRadius: 1,
+              flexShrink: 0,
+            }}
+          />
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--fg-0)',
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+            title={target.task.name}
+          >
+            {target.task.name}
+          </span>
+        </div>
+        <SerialPlate>{target.task.interval}s</SerialPlate>
+      </div>
+
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Etch>NOW</Etch>
+            <Numeric
+              value={latest != null ? Math.round(latest).toString() : '—'}
+              unit="ms"
+              size={20}
+              weight={500}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-end' }}>
+            <Etch>LOSS</Etch>
+            <span
+              className="mono tnum"
+              style={{
+                fontSize: 14,
+                fontWeight: 500,
+                color:
+                  lossStatus === 'bad'
+                    ? 'var(--signal-bad)'
+                    : lossStatus === 'warn'
+                      ? 'var(--signal-warn)'
+                      : 'var(--signal-good)',
+              }}
+            >
+              {loss.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+
+        <AreaChart
+          data={target.data}
+          width={260}
+          height={70}
+          color={color}
+          yMin={0}
+          yMax={yMax}
+          gridY={2}
+          gridX={3}
+          gradientId={`pt-${target.task.id}`}
+          formatY={(v) => `${Math.round(v)}`}
+        />
+      </div>
+    </div>
+  )
 }
 
 function ConnRow({ label, value }: { label: string; value: string | number }) {

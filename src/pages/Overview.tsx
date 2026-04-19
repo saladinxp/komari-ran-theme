@@ -32,6 +32,7 @@ interface Props {
   onTheme: (t: Theme) => void
   siteName?: string
   conn?: Conn
+  lastUpdate?: number | null
   ping?: PingHistory
 }
 
@@ -42,6 +43,7 @@ export function OverviewPage({
   onTheme,
   siteName = '岚 · Komari',
   conn = 'idle',
+  lastUpdate,
   ping,
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
@@ -225,6 +227,7 @@ export function OverviewPage({
           onTheme={onTheme}
           online={stats.online}
           total={stats.total}
+          lastUpdate={lastUpdate}
           conn={conn}
         />
 

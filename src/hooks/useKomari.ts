@@ -18,6 +18,8 @@ interface KomariState {
   conn: ConnStatus
   error: string | null
   ping: PingHistory
+  /** Timestamp of the most recent successful WS message (ms). */
+  lastUpdate: number | null
 }
 
 const INITIAL: KomariState = {
@@ -27,6 +29,7 @@ const INITIAL: KomariState = {
   conn: 'idle',
   error: null,
   ping: { count: 0, tasks: [], records: [] },
+  lastUpdate: null,
 }
 
 /**
@@ -79,7 +82,7 @@ export function useKomari(): KomariState {
               records[n.uuid] = makeOfflineRecord(n.uuid, prev.records[n.uuid])
             }
           }
-          return { ...prev, records }
+          return { ...prev, records, lastUpdate: Date.now() }
         })
       },
     })

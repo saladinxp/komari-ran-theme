@@ -26,6 +26,7 @@ interface Props {
   onTheme: (t: Theme) => void
   siteName?: string
   conn?: Conn
+  lastUpdate?: number | null
 }
 
 export function NodesPage({
@@ -35,6 +36,7 @@ export function NodesPage({
   onTheme,
   siteName = '岚 · Komari',
   conn = 'idle',
+  lastUpdate,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
@@ -97,6 +99,7 @@ export function NodesPage({
           onTheme={onTheme}
           online={stats.online}
           total={stats.total}
+          lastUpdate={lastUpdate}
           conn={conn}
         />
 

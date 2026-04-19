@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusDot } from '@/components/atoms/StatusDot'
@@ -15,16 +16,33 @@ interface Props {
   online: number
   total: number
   conn: Conn
+  /** Timestamp of the last successful WS message, for the "Xs ago" hint. */
+  lastUpdate?: number | null
 }
 
 /**
  * Topbar — title + status pill + search field + theme segmented control.
+ * Shows a live-updating "Xs ago" hint so the page reads as alive even
+ * when all metrics happen to be flat (e.g. an idle 1-core node).
  */
-export function Topbar({ title, subtitle, theme, onTheme, online, total, conn }: Props) {
+export function Topbar({ title, subtitle, theme, onTheme, online, total, conn, lastUpdate }: Props) {
   const connStatus =
     conn === 'open' ? 'good' : conn === 'connecting' ? 'info' : conn === 'error' ? 'bad' : 'idle'
   const connLabel =
     conn === 'open' ? 'LIVE' : conn === 'connecting' ? 'CONNECTING' : conn === 'error' ? 'ERROR' : 'OFFLINE'
+
+  // Tick once per second so the "Xs ago" badge stays current.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  let agoLabel: string | null = null
+  if (lastUpdate && conn === 'open') {
+    const sec = Math.max(0, Math.round((now - lastUpdate) / 1000))
+    agoLabel = sec < 2 ? 'JUST NOW' : `${sec}s ago`
+  }
 
   return (
     <header
@@ -59,6 +77,19 @@ export function Topbar({ title, subtitle, theme, onTheme, online, total, conn }:
                 {online}/{total} · {connLabel}
               </span>
             </SerialPlate>
+            {agoLabel && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--fg-3)',
+                  letterSpacing: '0.14em',
+                  opacity: 0.85,
+                }}
+              >
+                · {agoLabel}
+              </span>
+            )}
           </div>
           {subtitle && <Etch>{subtitle}</Etch>}
         </div>
