@@ -69,7 +69,18 @@ export function NodeDetailPage({
     [pingTargets],
   )
 
+  // Global stats for the topbar (must run before any early return — Rules of Hooks).
+  const globalOnline = useMemo(() => {
+    let n = 0
+    for (const x of nodes) if (records[x.uuid]?.online) n++
+    return n
+  }, [nodes, records])
+
+  // Distinguish "still loading the node roster" from "uuid genuinely not found".
+  // On a hard refresh of #/nodes/UUID, nodes is briefly [] before /api/nodes responds.
+  const rosterLoaded = nodes.length > 0
   if (!node) {
+    const stillLoading = !rosterLoaded
     return (
       <div
         style={{
@@ -77,13 +88,14 @@ export function NodeDetailPage({
           background: 'var(--bg-0)',
           color: 'var(--fg-0)',
           fontFamily: 'var(--font-sans)',
+          minHeight: '100vh',
         }}
       >
         <Sidebar active="nodes" />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
-            subtitle="UNKNOWN PROBE"
+            subtitle={stillLoading ? 'LOADING PROBE …' : 'UNKNOWN PROBE'}
             theme={theme}
             onTheme={onTheme}
             online={0}
@@ -92,32 +104,54 @@ export function NodeDetailPage({
             conn={conn}
           />
           <main style={{ flex: 1, padding: 20 }}>
-            <CardFrame title="Node not found" code="404">
-              <div style={{ padding: 40, textAlign: 'center' }}>
+            {stillLoading ? (
+              <CardFrame title="Loading probe …" code="…">
                 <div
                   style={{
+                    padding: 40,
+                    textAlign: 'center',
                     fontFamily: 'var(--font-mono)',
-                    color: 'var(--fg-2)',
-                    fontSize: 12,
-                    letterSpacing: '0.1em',
-                    marginBottom: 16,
-                  }}
-                >
-                  PROBE [{uuid.slice(0, 8)}…] NOT IN ROSTER
-                </div>
-                <a
-                  href={hashFor({ name: 'nodes' })}
-                  style={{
-                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--fg-3)',
                     fontSize: 11,
-                    color: 'var(--accent-bright)',
-                    letterSpacing: '0.1em',
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  ← BACK TO NODES
-                </a>
-              </div>
-            </CardFrame>
+                  Fetching node roster
+                  <br />
+                  <span style={{ fontSize: 9, opacity: 0.7 }}>
+                    UUID · {uuid.slice(0, 8).toUpperCase()}
+                  </span>
+                </div>
+              </CardFrame>
+            ) : (
+              <CardFrame title="Node not found" code="404">
+                <div style={{ padding: 40, textAlign: 'center' }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--fg-2)',
+                      fontSize: 12,
+                      letterSpacing: '0.1em',
+                      marginBottom: 16,
+                    }}
+                  >
+                    PROBE [{uuid.slice(0, 8)}…] NOT IN ROSTER
+                  </div>
+                  <a
+                    href={hashFor({ name: 'nodes' })}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      color: 'var(--accent-bright)',
+                      letterSpacing: '0.1em',
+                    }}
+                  >
+                    ← BACK TO NODES
+                  </a>
+                </div>
+              </CardFrame>
+            )}
           </main>
           <Footer />
         </div>
@@ -141,13 +175,6 @@ export function NodeDetailPage({
       : 'good'
 
   const subtitle = `${node.region ?? '—'} · ${node.ip ?? '—'} · UP ${online ? formatUptime(record?.uptime) : '—'}`
-
-  // Global stats for the topbar (so it shows network-wide online count, not 1/1).
-  const globalOnline = useMemo(() => {
-    let n = 0
-    for (const x of nodes) if (records[x.uuid]?.online) n++
-    return n
-  }, [nodes, records])
 
   const haveLoadHistory = hasLoadData(history.load)
   const cpuHist = buckets.cpu

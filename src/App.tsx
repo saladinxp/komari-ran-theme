@@ -63,9 +63,14 @@ export default function App() {
     )
   }
 
-  // Dev fallback: when running outside a Komari panel (no /api/nodes and no WS),
-  // show mock data so the theme is previewable.
-  const useMockFallback = nodes.length === 0 && conn !== 'open'
+  // Dev-only mock fallback: only kick in when running outside a real Komari host
+  // (e.g. file:// preview, or an empty origin). On a real http(s) origin we wait
+  // for the API to load — using mock there would briefly route a real-uuid detail
+  // page to "Node not found" before the WS data lands, causing flicker on refresh.
+  const isDevPreview =
+    typeof window !== 'undefined' &&
+    (window.location.protocol === 'file:' || window.location.origin === 'null')
+  const useMockFallback = isDevPreview && nodes.length === 0
   const displayNodes = useMockFallback ? MOCK_NODES : nodes
   const displayRecords = useMockFallback ? MOCK_RECORDS : records
 
