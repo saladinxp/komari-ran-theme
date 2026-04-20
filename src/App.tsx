@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { OverviewPage } from '@/pages/Overview'
 import { NodesPage } from '@/pages/Nodes'
 import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
 import { useKomari } from '@/hooks/useKomari'
+import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { ThemeCover } from '@/components/ThemeCover'
 import { useRoute } from '@/router/route'
@@ -74,6 +75,14 @@ export default function App() {
   const displayNodes = useMockFallback ? MOCK_NODES : nodes
   const displayRecords = useMockFallback ? MOCK_RECORDS : records
 
+  // Global per-node + aggregated history — fetched once, shared across pages.
+  // Skipped in mock-fallback (no real API to hit).
+  const realUuids = useMemo(
+    () => (useMockFallback ? [] : displayNodes.map((n) => n.uuid)),
+    [displayNodes, useMockFallback],
+  )
+  const globalHistory = useGlobalHistory(realUuids, 1)
+
   const siteName = config?.site_name ?? '岚 · Komari'
 
   // Route dispatch
@@ -102,6 +111,7 @@ export default function App() {
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
+          history={globalHistory}
         />
       )
 
@@ -115,6 +125,7 @@ export default function App() {
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
+          history={globalHistory}
         />
       )
 
@@ -130,6 +141,7 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           ping={ping}
+          history={globalHistory}
         />
       )
   }

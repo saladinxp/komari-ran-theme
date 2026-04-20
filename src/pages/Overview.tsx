@@ -16,8 +16,8 @@ import { Footer } from '@/components/panels/Footer'
 import { hashFor } from '@/router/route'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
+import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
-import { genSeries } from '@/utils/series'
 import { formatBytes } from '@/utils/format'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -34,6 +34,7 @@ interface Props {
   conn?: Conn
   lastUpdate?: number | null
   ping?: PingHistory
+  history?: GlobalHistoryState
 }
 
 export function OverviewPage({
@@ -45,6 +46,7 @@ export function OverviewPage({
   conn = 'idle',
   lastUpdate,
   ping,
+  history,
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
@@ -70,19 +72,41 @@ export function OverviewPage({
     const trafficStr = formatBytes(totalTraffic)
     const [trafficVal, trafficUnit] = trafficStr.split(' ')
 
+    // ── derive sparklines from real history ──
+    const agg = history?.aggregate
+    const byNode = history?.byNode
+    // online over time: bucket node-count (≈ # nodes that reported in that bucket)
+    const onlineSpark = agg?.nodeCount ?? []
+    // degraded: per-bucket count of nodes whose cpu > 80
+    const degradedSpark = (() => {
+      if (!byNode) return [] as number[]
+      const buckets = 60
+      const out = new Array(buckets).fill(0)
+      for (const series of Object.values(byNode)) {
+        for (let i = 0; i < buckets; i++) {
+          if ((series.cpu[i] ?? 0) > 80) out[i] += 1
+        }
+      }
+      return out
+    })()
+    // traffic throughput: net_in + net_out summed bytes/s (use as visual rhythm)
+    const trafficSpark = agg ? agg.netIn.map((v, i) => v + (agg.netOut[i] ?? 0)) : []
+    // regions: kept flat (near-constant series isn't sparkline material) — use online count as proxy
+    const regionsSpark = onlineSpark
+
     return [
       {
         label: 'NODES ONLINE',
         code: 'M01',
         value: `${online}/${total}`,
-        spark: genSeries(30, 11, 80, 5),
+        spark: onlineSpark,
         sparkColor: 'var(--signal-good)',
       },
       {
         label: 'DEGRADED',
         code: 'M02',
         value: String(warn),
-        spark: genSeries(30, 12, 30, 15),
+        spark: degradedSpark,
         sparkColor: 'var(--signal-warn)',
       },
       {
@@ -90,7 +114,7 @@ export function OverviewPage({
         code: 'M03',
         value: trafficVal || '0',
         unit: trafficUnit || 'B',
-        spark: genSeries(30, 13, 60, 18),
+        spark: trafficSpark,
         sparkColor: 'var(--accent)',
       },
       {
@@ -99,11 +123,11 @@ export function OverviewPage({
         value: String(
           new Set(nodes.map((n) => n.region?.split('-')[0]).filter(Boolean)).size,
         ),
-        spark: genSeries(30, 14, 50, 5),
+        spark: regionsSpark,
         sparkColor: 'var(--signal-info)',
       },
     ]
-  }, [nodes, records])
+  }, [nodes, records, history])
 
   const filteredNodes = useMemo(() => {
     if (filter === 'all') return nodes
@@ -188,7 +212,12 @@ export function OverviewPage({
     [pingTargets],
   )
 
-  const trafficSeries = useMemo(() => genSeries(30, 31, 60, 30).map(Math.round), [])
+  // Traffic series — last hour of summed bytes/s (net_in + net_out) across all nodes.
+  const trafficSeries = useMemo(() => {
+    const agg = history?.aggregate
+    if (!agg) return new Array(60).fill(0)
+    return agg.netIn.map((v, i) => Math.round(v + (agg.netOut[i] ?? 0)))
+  }, [history])
 
   // sum traffic for the bottom card
   const trafficSummary = useMemo(() => {
@@ -198,11 +227,14 @@ export function OverviewPage({
       up += r?.network_total_up ?? 0
       down += r?.network_total_down ?? 0
     }
-    const peak = Math.max(...trafficSeries)
+    const peak = Math.max(...trafficSeries, 0)
+    const peakStr = formatBytes(peak)
+    const [peakVal, peakUnit] = peakStr.split(' ')
     return {
       up: formatBytes(up),
       down: formatBytes(down),
-      peak: `${peak}`,
+      peak: peakVal || '0',
+      peakUnit: peakUnit || 'B/s',
     }
   }, [records, trafficSeries])
 
@@ -322,8 +354,8 @@ export function OverviewPage({
                   <NodeCardCompact
                     node={node}
                     record={records[node.uuid]}
-                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
+                    pingSpark={history?.pingByNode[node.uuid] ?? []}
                   />
                 </a>
               ))}
@@ -339,8 +371,8 @@ export function OverviewPage({
                   <NodeCardRow
                     node={node}
                     record={records[node.uuid]}
-                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
+                    pingSpark={history?.pingByNode[node.uuid] ?? []}
                   />
                 </a>
               ))}
@@ -399,13 +431,15 @@ export function OverviewPage({
               )}
             </CardFrame>
 
-            <CardFrame title="Traffic · 30D" code="T · 09">
+            <CardFrame title="Traffic · 1H" code="T · 09">
               <BarChart
                 data={trafficSeries}
                 width={340}
                 height={110}
                 color="var(--accent)"
-                labels={Array.from({ length: 30 }, (_, i) => (i % 5 === 0 ? String(i + 1) : ''))}
+                labels={Array.from({ length: 60 }, (_, i) =>
+                  i === 0 ? '-60m' : i === 30 ? '-30m' : i === 59 ? 'now' : '',
+                )}
               />
               <div
                 style={{
@@ -432,7 +466,7 @@ export function OverviewPage({
                 <div>
                   <Etch>PEAK</Etch>
                   <div>
-                    <Numeric value={trafficSummary.peak} unit="GB" size={14} />
+                    <Numeric value={trafficSummary.peak} unit={trafficSummary.peakUnit} size={14} />
                   </div>
                 </div>
               </div>
@@ -444,10 +478,4 @@ export function OverviewPage({
       </div>
     </div>
   )
-}
-
-function hashSeed(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
-  return Math.abs(h)
 }

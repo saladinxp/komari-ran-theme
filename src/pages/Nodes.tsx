@@ -8,7 +8,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
 import type { KomariNode, KomariRecord } from '@/types/komari'
-import { genSeries } from '@/utils/series'
+import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
 import { hashFor } from '@/router/route'
 import { Footer } from '@/components/panels/Footer'
@@ -27,6 +27,7 @@ interface Props {
   siteName?: string
   conn?: Conn
   lastUpdate?: number | null
+  history?: GlobalHistoryState
 }
 
 export function NodesPage({
@@ -37,6 +38,7 @@ export function NodesPage({
   siteName = '岚 · Komari',
   conn = 'idle',
   lastUpdate,
+  history,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
@@ -200,8 +202,8 @@ export function NodesPage({
                   <NodeCardCompact
                     node={node}
                     record={records[node.uuid]}
-                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
+                    pingSpark={history?.pingByNode[node.uuid] ?? []}
                   />
                 </a>
               ))}
@@ -221,8 +223,8 @@ export function NodesPage({
                   <NodeCardRow
                     node={node}
                     record={records[node.uuid]}
-                    netSpark={genSeries(40, hashSeed(node.uuid) + 1, 50, 30)}
-                    pingSpark={genSeries(28, hashSeed(node.uuid) + 11, 80, 120)}
+                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
+                    pingSpark={history?.pingByNode[node.uuid] ?? []}
                   />
                 </a>
               ))}
@@ -236,8 +238,3 @@ export function NodesPage({
   )
 }
 
-function hashSeed(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0
-  return Math.abs(h)
-}

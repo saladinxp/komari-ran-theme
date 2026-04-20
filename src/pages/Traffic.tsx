@@ -12,13 +12,12 @@ import { StatusDot } from '@/components/atoms/StatusDot'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { BarChart } from '@/components/charts/BarChart'
 import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { formatBps, formatBytes } from '@/utils/format'
-import { genSeries } from '@/utils/series'
 import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
-type Window = '24h' | '7d' | '30d'
 type SortBy = 'total' | 'tx' | 'rx' | 'live'
 
 interface Props {
@@ -29,6 +28,7 @@ interface Props {
   siteName?: string
   conn?: Conn
   lastUpdate?: number | null
+  history?: GlobalHistoryState
 }
 
 interface NodeTraffic {
@@ -52,8 +52,8 @@ export function TrafficPage({
   siteName = '岚 · Komari',
   conn = 'idle',
   lastUpdate,
+  history,
 }: Props) {
-  const [windowSize, setWindowSize] = useState<Window>('24h')
   const [sortBy, setSortBy] = useState<SortBy>('total')
 
   // Per-node traffic snapshot — pulled straight from live records.
@@ -102,19 +102,23 @@ export function TrafficPage({
     return { total, totalTx, totalRx, liveBps, avgBps, online }
   }, [nodeTraffic])
 
-  // Hero stats
+  // Hero stats — sparklines are derived from the global 1H history aggregate.
   const heroStats = useMemo(() => {
     const totalStr = formatBytes(stats.total).split(' ')
     const txStr = formatBytes(stats.totalTx).split(' ')
     const rxStr = formatBytes(stats.totalRx).split(' ')
     const liveStr = formatBps(stats.liveBps).split(' ')
+    const agg = history?.aggregate
+    const txSpark = agg?.netOut ?? []
+    const rxSpark = agg?.netIn ?? []
+    const totalSpark = agg ? agg.netOut.map((v, i) => v + (agg.netIn[i] ?? 0)) : []
     return [
       {
         label: 'CUMULATIVE TOTAL',
         code: 'T01',
         value: totalStr[0] || '0',
         unit: totalStr[1] || 'B',
-        spark: genSeries(30, 21, 60, 18),
+        spark: totalSpark,
         sparkColor: 'var(--accent)',
       },
       {
@@ -122,7 +126,7 @@ export function TrafficPage({
         code: 'T02',
         value: txStr[0] || '0',
         unit: txStr[1] || 'B',
-        spark: genSeries(30, 22, 50, 22),
+        spark: txSpark,
         sparkColor: 'var(--accent-bright)',
       },
       {
@@ -130,7 +134,7 @@ export function TrafficPage({
         code: 'T03',
         value: rxStr[0] || '0',
         unit: rxStr[1] || 'B',
-        spark: genSeries(30, 23, 60, 25),
+        spark: rxSpark,
         sparkColor: 'var(--signal-good)',
       },
       {
@@ -138,18 +142,18 @@ export function TrafficPage({
         code: 'T04',
         value: liveStr[0] || '0',
         unit: liveStr[1] ? liveStr[1].replace('/s', '') : 'B',
-        spark: genSeries(30, 24, 40, 30),
+        spark: totalSpark,
         sparkColor: 'var(--signal-info)',
       },
     ]
-  }, [stats])
+  }, [stats, history])
 
-  // Trend chart data (mock — global aggregate would need per-node history fetches)
-  const trendBuckets = windowSize === '24h' ? 24 : windowSize === '7d' ? 28 : 30
+  // Trend chart data — last hour of summed bytes/s across all nodes.
   const trendData = useMemo(() => {
-    const seed = windowSize === '24h' ? 31 : windowSize === '7d' ? 32 : 33
-    return genSeries(trendBuckets, seed, 60, 35)
-  }, [trendBuckets, windowSize])
+    const agg = history?.aggregate
+    if (!agg) return new Array(60).fill(0)
+    return agg.netIn.map((v, i) => v + (agg.netOut[i] ?? 0))
+  }, [history])
 
   const subtitle = useMemo(() => {
     return `${nodes.length} PROBES · ${formatBytes(stats.total)} CUMULATIVE`
@@ -213,25 +217,11 @@ export function TrafficPage({
 
           <HeroStats stats={heroStats} />
 
-          {/* Trend + window switcher */}
+          {/* Trend — global 1H aggregate from per-node history */}
           <CardFrame
-            title="全网流量趋势"
+            title="全网流量趋势 · 1H"
             code="T · 06"
-            action={
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Etch>MOCK · DEMO</Etch>
-                <Segmented
-                  size="sm"
-                  value={windowSize}
-                  onChange={(v) => setWindowSize(v as Window)}
-                  options={[
-                    { value: '24h', label: '24H' },
-                    { value: '7d', label: '7D' },
-                    { value: '30d', label: '30D' },
-                  ]}
-                />
-              </div>
-            }
+            action={<Etch>BYTES/SEC · ALL NODES</Etch>}
           >
             <AreaChart
               data={trendData}
@@ -242,20 +232,6 @@ export function TrafficPage({
               yMax={Math.max(...trendData, 1) * 1.2 || 1}
               gradientId="traffic-trend"
             />
-            <div
-              style={{
-                marginTop: 8,
-                paddingTop: 8,
-                borderTop: '1px solid var(--edge-engrave)',
-                fontSize: 9,
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--fg-3)',
-                letterSpacing: '0.1em',
-                textAlign: 'center',
-              }}
-            >
-              ⚠ TREND CHART USES MOCK DATA · GLOBAL HISTORY AGGREGATION COMING IN A FUTURE PATCH
-            </div>
           </CardFrame>
 
           {/* Top Talkers */}
