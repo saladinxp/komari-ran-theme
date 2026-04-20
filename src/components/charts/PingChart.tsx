@@ -1,3 +1,5 @@
+import { useElementWidth } from '@/hooks/useElementWidth'
+
 interface Series {
   data: number[]
   label?: string
@@ -5,6 +7,7 @@ interface Series {
 
 interface Props {
   series: Series[]
+  /** Initial / fallback width before ResizeObserver mounts. */
   width?: number
   height?: number
   /** When undefined, computed from series max with a 20% margin. */
@@ -24,10 +27,19 @@ const X_LABELS = ['-1h', '-50m', '-40m', '-30m', '-20m', '-10m', 'now']
  * PingChart — multiple latency series over a 1h window.
  * Y axis labeled in ms, X axis at -1h / -50m / .../ now. Optional legend
  * row shows series labels (e.g. ping target names).
+ *
+ * Adapts to parent container width via ResizeObserver.
  */
-export function PingChart({ series, width = 480, height = 160, yMax }: Props) {
+export function PingChart({ series, width: initialWidth = 480, height = 160, yMax }: Props) {
+  const [wrapRef, width] = useElementWidth<HTMLDivElement>(initialWidth)
+
   if (!series.length || !series[0].data.length) {
-    return <div style={{ width, height, background: 'var(--bg-inset)' }} />
+    return (
+      <div
+        ref={wrapRef}
+        style={{ width: '100%', height, background: 'var(--bg-inset)' }}
+      />
+    )
   }
 
   // Auto Y scale if not provided — find max across all series, round up to nice value
@@ -50,7 +62,8 @@ export function PingChart({ series, width = 480, height = 160, yMax }: Props) {
   const stepX = innerW / Math.max(1, series[0].data.length - 1)
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <div ref={wrapRef} style={{ width: '100%', height }}>
+      <svg width={width} height={height} style={{ display: 'block' }}>
       {/* horizontal grid + y labels */}
       {Array.from({ length: 5 }, (_, i) => {
         const y = pad.top + (i / 4) * innerH
@@ -160,5 +173,6 @@ export function PingChart({ series, width = 480, height = 160, yMax }: Props) {
           )
         })}
     </svg>
+    </div>
   )
 }
