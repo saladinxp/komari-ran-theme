@@ -1,4 +1,11 @@
+import { useCallback } from 'react'
 import { useElementWidth } from '@/hooks/useElementWidth'
+import {
+  ChartTooltipOverlay,
+  formatTipTime,
+  useChartTooltip,
+  type TooltipPoint,
+} from './ChartTooltip'
 
 interface Props {
   data: number[]
@@ -16,14 +23,16 @@ interface Props {
   gradientId?: string
   /** Format the y-axis label given the value */
   formatY?: (v: number) => string
+  /** Optional per-point unix-ms timestamps; enables hover tooltip with time. */
+  times?: number[]
+  /** Optional formatter for the tooltip value (gets units etc). Defaults to v.toFixed(1). */
+  formatValue?: (v: number) => string
 }
 
 /**
  * AreaChart — full chart with grid, y-axis labels on the right,
- * area fill gradient, current-value dot, optional threshold dashed line.
- *
- * Adapts to parent container width via ResizeObserver; the `width` prop
- * is just the initial render fallback before the observer kicks in.
+ * area fill gradient, current-value dot, optional threshold dashed line,
+ * and a hover tooltip showing value (+ time when `times` is provided).
  */
 export function AreaChart({
   data,
@@ -37,6 +46,8 @@ export function AreaChart({
   gridX = 6,
   gradientId,
   formatY,
+  times,
+  formatValue,
 }: Props) {
   const [wrapRef, w] = useElementWidth<HTMLDivElement>(initialWidth)
 
@@ -47,6 +58,39 @@ export function AreaChart({
   const stepX = data.length > 1 ? innerW / (data.length - 1) : 0
 
   const id = gradientId ?? `grad-${Math.random().toString(36).slice(2, 8)}`
+
+  const fmt = formatValue ?? ((v: number) => v.toFixed(1))
+
+  const resolve = useCallback(
+    (svgX: number): TooltipPoint | null => {
+      if (data.length === 0 || stepX === 0) return null
+      const localX = svgX - pad.left
+      const idx = Math.max(0, Math.min(data.length - 1, Math.round(localX / stepX)))
+      const v = data[idx]
+      const cx = pad.left + idx * stepX
+      const cy =
+        pad.top + innerH - ((Math.max(yMin, Math.min(yMax, v)) - yMin) / range) * innerH
+      const t = times?.[idx]
+      return {
+        cx,
+        cy,
+        color,
+        valueText: fmt(v),
+        subText: t ? formatTipTime(t) : undefined,
+      }
+    },
+    [data, stepX, pad.left, pad.top, innerH, yMin, yMax, range, times, color, fmt],
+  )
+
+  const tooltip = useChartTooltip({
+    width: w,
+    height,
+    innerLeft: pad.left,
+    innerRight: pad.left + innerW,
+    innerTop: pad.top,
+    innerBottom: pad.top + innerH,
+    resolve,
+  })
 
   if (data.length === 0) {
     return (
@@ -77,8 +121,19 @@ export function AreaChart({
 
   const formatLabel = formatY ?? ((v: number) => v.toFixed(0))
 
+  // Combine refs: useElementWidth and useChartTooltip both want the wrapper.
+  const setRefs = (el: HTMLDivElement | null) => {
+    ;(wrapRef as { current: HTMLDivElement | null }).current = el
+    ;(tooltip.wrapRef as { current: HTMLDivElement | null }).current = el
+  }
+
   return (
-    <div ref={wrapRef} style={{ width: '100%', height, position: 'relative' }}>
+    <div
+      ref={setRefs}
+      onMouseMove={tooltip.bind.onMouseMove}
+      onMouseLeave={tooltip.bind.onMouseLeave}
+      style={{ width: '100%', height, position: 'relative', cursor: 'crosshair' }}
+    >
       <svg width={w} height={height} style={{ display: 'block' }}>
         {/* horizontal grid */}
         {Array.from({ length: gridY + 1 }, (_, i) => {
@@ -174,6 +229,7 @@ export function AreaChart({
           )
         })}
       </svg>
+      <ChartTooltipOverlay hover={tooltip.hover} width={w} height={height} />
     </div>
   )
 }

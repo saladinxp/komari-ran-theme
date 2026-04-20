@@ -6,10 +6,12 @@ import { Footer } from '@/components/panels/Footer'
 import { Etch } from '@/components/atoms/Etch'
 import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
+import { Segmented } from '@/components/atoms/Segmented'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { Tabs } from '@/components/atoms/Tabs'
 import { AreaChart } from '@/components/charts/AreaChart'
+import { DualSeriesChart } from '@/components/charts/DualSeriesChart'
 import { PingChart } from '@/components/charts/PingChart'
 import { RadialGauge } from '@/components/charts/RadialGauge'
 import type { KomariNode, KomariRecord } from '@/types/komari'
@@ -28,6 +30,53 @@ import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
+type WindowKey = '1h' | '6h' | '24h' | '7d'
+
+interface WindowSpec {
+  key: WindowKey
+  label: string
+  hours: number
+  buckets: number
+  /** 7 X-axis tick labels for the chart, evenly spaced, oldest → newest. */
+  xLabels: string[]
+  /** Title suffix shown on the chart cards. */
+  titleSuffix: string
+}
+
+const WINDOWS: WindowSpec[] = [
+  {
+    key: '1h',
+    label: '1H',
+    hours: 1,
+    buckets: 60,
+    xLabels: ['-1h', '-50m', '-40m', '-30m', '-20m', '-10m', 'now'],
+    titleSuffix: '1H',
+  },
+  {
+    key: '6h',
+    label: '6H',
+    hours: 6,
+    buckets: 72,
+    xLabels: ['-6h', '-5h', '-4h', '-3h', '-2h', '-1h', 'now'],
+    titleSuffix: '6H',
+  },
+  {
+    key: '24h',
+    label: '24H',
+    hours: 24,
+    buckets: 96,
+    xLabels: ['-24h', '-20h', '-16h', '-12h', '-8h', '-4h', 'now'],
+    titleSuffix: '24H',
+  },
+  {
+    key: '7d',
+    label: '7D',
+    hours: 24 * 7,
+    buckets: 84,
+    xLabels: ['-7d', '-6d', '-5d', '-4d', '-3d', '-2d', '-1d'],
+    titleSuffix: '7D',
+  },
+]
 
 interface Props {
   uuid: string
@@ -51,18 +100,37 @@ export function NodeDetailPage({
   siteName = '岚 · Komari',
 }: Props) {
   // Hooks must be called before any early return.
-  const history = useNodeHistory(uuid, 1)
+  const [windowKey, setWindowKey] = useState<WindowKey>('1h')
+  const windowSpec = WINDOWS.find((w) => w.key === windowKey) ?? WINDOWS[0]
+  const history = useNodeHistory(uuid, windowSpec.hours)
   const [tab, setTab] = useState<'overview' | 'latency'>('overview')
 
   const node = useMemo(() => nodes.find((n) => n.uuid === uuid), [nodes, uuid])
   const record = node ? records[node.uuid] : undefined
   const labels = node ? parseLabels(node.tags) : { raw: [] }
 
+  const windowMs = windowSpec.hours * 60 * 60 * 1000
   // Bucketed real history (zero-filled when there's no data yet).
-  const buckets = useMemo(() => bucketLoadHistory(history.load, 60), [history.load])
+  const buckets = useMemo(
+    () => bucketLoadHistory(history.load, windowSpec.buckets, windowMs),
+    [history.load, windowSpec.buckets, windowMs],
+  )
+  // Per-point timestamps for chart tooltips. Same scheme as bucketLoadHistory:
+  // bucketMs * (i + 0.5) gives the slot midpoint.
+  const bucketTimes = useMemo(() => {
+    const now = Date.now()
+    const start = now - windowMs
+    const bucketMs = windowMs / windowSpec.buckets
+    return Array.from({ length: windowSpec.buckets }, (_, i) =>
+      Math.round(start + (i + 0.5) * bucketMs),
+    )
+  }, [windowSpec.buckets, windowMs])
   const pingTargets = useMemo(
-    () => (hasPingData(history.ping) ? aggregatePingByTarget(history.ping, 60, 60 * 60 * 1000, 6) : []),
-    [history.ping],
+    () =>
+      hasPingData(history.ping)
+        ? aggregatePingByTarget(history.ping, windowSpec.buckets, windowMs, 6)
+        : [],
+    [history.ping, windowSpec.buckets, windowMs],
   )
   const pingSeries = useMemo(
     () => pingTargets.map((t) => ({ data: t.data, label: t.task.name })),
@@ -371,22 +439,41 @@ export function NodeDetailPage({
             />
           </div>
 
-          {/* Tabs separator */}
-          <Tabs
-            tabs={[
-              { id: 'overview', label: 'Overview' },
-              {
-                id: 'latency',
-                label: '测速点延迟',
-                badge:
-                  pingSeries.length > 0 ? (
-                    <SerialPlate>{pingSeries.length}</SerialPlate>
-                  ) : null,
-              },
-            ]}
-            active={tab}
-            onChange={(t) => setTab(t as 'overview' | 'latency')}
-          />
+          {/* Tabs + window selector */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <Tabs
+              tabs={[
+                { id: 'overview', label: 'Overview' },
+                {
+                  id: 'latency',
+                  label: '测速点延迟',
+                  badge:
+                    pingSeries.length > 0 ? (
+                      <SerialPlate>{pingSeries.length}</SerialPlate>
+                    ) : null,
+                },
+              ]}
+              active={tab}
+              onChange={(t) => setTab(t as 'overview' | 'latency')}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Etch>WINDOW</Etch>
+              <Segmented
+                size="sm"
+                value={windowKey}
+                onChange={(v) => setWindowKey(v as WindowKey)}
+                options={WINDOWS.map((w) => ({ value: w.key, label: w.label }))}
+              />
+            </div>
+          </div>
 
           {tab === 'overview' && (
             <>
@@ -399,7 +486,7 @@ export function NodeDetailPage({
                 }}
               >
                 <CardFrame
-                  title="CPU · 1H"
+                  title={`CPU · ${windowSpec.titleSuffix}`}
                   code="C · 01"
                   action={
                     <Etch>
@@ -414,6 +501,8 @@ export function NodeDetailPage({
                   <ChartOrEmpty empty={!haveLoadHistory}>
                     <AreaChart
                       data={cpuHist}
+                      times={bucketTimes}
+                      formatValue={(v) => `${v.toFixed(1)}%`}
                       width={400}
                       height={150}
                       color="var(--accent)"
@@ -424,10 +513,12 @@ export function NodeDetailPage({
                     />
                   </ChartOrEmpty>
                 </CardFrame>
-                <CardFrame title="Memory · 1H" code="C · 02">
+                <CardFrame title={`Memory · ${windowSpec.titleSuffix}`} code="C · 02">
                   <ChartOrEmpty empty={!haveLoadHistory}>
                     <AreaChart
                       data={memHist}
+                      times={bucketTimes}
+                      formatValue={(v) => `${v.toFixed(1)}%`}
                       width={400}
                       height={150}
                       color="var(--signal-info)"
@@ -439,13 +530,15 @@ export function NodeDetailPage({
                   </ChartOrEmpty>
                 </CardFrame>
                 <CardFrame
-                  title="Disk · 1H"
+                  title={`Disk · ${windowSpec.titleSuffix}`}
                   code="C · 03"
                   action={<Etch>USAGE %</Etch>}
                 >
                   <ChartOrEmpty empty={!haveLoadHistory}>
                     <AreaChart
                       data={buckets.disk}
+                      times={bucketTimes}
+                      formatValue={(v) => `${v.toFixed(1)}%`}
                       width={400}
                       height={150}
                       color="var(--signal-good)"
@@ -457,12 +550,12 @@ export function NodeDetailPage({
                   </ChartOrEmpty>
                 </CardFrame>
                 <CardFrame
-                  title="Network · 1H"
+                  title={`Network · ${windowSpec.titleSuffix}`}
                   code="C · 04"
                   action={<Etch>↑ / ↓ BYTES/S</Etch>}
                 >
                   <ChartOrEmpty empty={!haveLoadHistory}>
-                    <DualNetChart up={netUpHist} down={netDownHist} />
+                    <DualNetChart up={netUpHist} down={netDownHist} times={bucketTimes} />
                   </ChartOrEmpty>
                 </CardFrame>
               </div>
@@ -610,7 +703,7 @@ export function NodeDetailPage({
                       letterSpacing: '-0.01em',
                     }}
                   >
-                    测速点延迟 · 1H
+                    测速点延迟 · {windowSpec.titleSuffix}
                   </h3>
                   <SerialPlate>
                     {pingTargets.length > 0
@@ -652,12 +745,17 @@ export function NodeDetailPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                     gap: 14,
                   }}
                 >
                   {pingTargets.map((t, i) => (
-                    <PingTargetCard key={t.task.id} target={t} index={i} />
+                    <PingTargetCard
+                      key={t.task.id}
+                      target={t}
+                      index={i}
+                      times={bucketTimes}
+                    />
                   ))}
                 </div>
               )}
@@ -698,40 +796,29 @@ function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.Rea
 }
 
 /** Network ↑/↓ overlaid in one chart with mirrored emphasis. */
-function DualNetChart({ up, down }: { up: number[]; down: number[] }) {
+function DualNetChart({
+  up,
+  down,
+  times,
+}: {
+  up: number[]
+  down: number[]
+  times?: number[]
+}) {
+  // Use PingChart's multi-series machinery — it already handles tooltip-picks-
+  // closest-series. We just relabel the units (B/s instead of ms).
   const maxV = Math.max(...up, ...down, 1)
   const yMax = maxV * 1.2 || 1
   return (
     <div style={{ position: 'relative' }}>
-      <AreaChart
-        data={up}
-        width={400}
-        height={150}
-        color="var(--accent-bright)"
-        yMin={0}
+      <DualSeriesChart
+        series={[
+          { data: up, label: '↑ TX', color: 'var(--accent-bright)', formatGradId: 'ndt-netup' },
+          { data: down, label: '↓ RX', color: 'var(--signal-good)', formatGradId: 'ndt-netdown' },
+        ]}
+        times={times}
         yMax={yMax}
-        gradientId="ndt-netup"
-        formatY={(v) => formatBytesShort(v)}
       />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          mixBlendMode: 'normal',
-        }}
-      >
-        <AreaChart
-          data={down}
-          width={400}
-          height={150}
-          color="var(--signal-good)"
-          yMin={0}
-          yMax={yMax}
-          gradientId="ndt-netdown"
-          formatY={(v) => formatBytesShort(v)}
-        />
-      </div>
       {/* Legend */}
       <div
         style={{
@@ -749,6 +836,7 @@ function DualNetChart({ up, down }: { up: number[]; down: number[] }) {
           padding: '2px 6px',
           border: '1px solid var(--edge-engrave)',
           borderRadius: 2,
+          pointerEvents: 'none',
         }}
       >
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -778,22 +866,15 @@ function DualNetChart({ up, down }: { up: number[]; down: number[] }) {
   )
 }
 
-/** Compact byte formatter for chart axis labels (no spaces, fewer chars). */
-function formatBytesShort(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0'
-  const units = ['B', 'K', 'M', 'G', 'T']
-  const idx = Math.min(Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)), units.length - 1)
-  const v = bytes / Math.pow(1024, idx)
-  return `${v.toFixed(idx === 0 ? 0 : 1)}${units[idx]}`
-}
-
 /** A single ping target — name, current value, loss%, and a 1H mini area chart. */
 function PingTargetCard({
   target,
   index,
+  times,
 }: {
   target: { task: { id: number; name: string; loss: number; interval: number }; data: number[]; latest?: number }
   index: number
+  times?: number[]
 }) {
   const colors = ['var(--accent)', 'var(--signal-info)', 'var(--signal-good)', 'var(--accent-bright)']
   const color = colors[index % colors.length]
@@ -892,6 +973,8 @@ function PingTargetCard({
 
         <AreaChart
           data={target.data}
+          times={times}
+          formatValue={(v) => `${Math.round(v)} ms`}
           width={260}
           height={70}
           color={color}

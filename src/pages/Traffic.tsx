@@ -20,6 +20,17 @@ type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type SortBy = 'total' | 'tx' | 'rx' | 'live'
 
+function bytesShort(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0'
+  const units = ['B', 'K', 'M', 'G', 'T']
+  const idx = Math.min(
+    Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)),
+    units.length - 1,
+  )
+  const v = bytes / Math.pow(1024, idx)
+  return `${v.toFixed(idx === 0 ? 0 : 1)}${units[idx]}`
+}
+
 interface Props {
   nodes: KomariNode[]
   records: Record<string, KomariRecord>
@@ -154,6 +165,14 @@ export function TrafficPage({
     if (!agg) return new Array(60).fill(0)
     return agg.netIn.map((v, i) => v + (agg.netOut[i] ?? 0))
   }, [history])
+
+  // Per-bucket midpoint timestamps (1H, 60 buckets).
+  const bucketTimes = useMemo(() => {
+    const now = Date.now()
+    const start = now - 60 * 60 * 1000
+    const stepMs = (60 * 60 * 1000) / 60
+    return Array.from({ length: 60 }, (_, i) => Math.round(start + (i + 0.5) * stepMs))
+  }, [])
 
   const subtitle = useMemo(() => {
     return `${nodes.length} PROBES · ${formatBytes(stats.total)} CUMULATIVE`

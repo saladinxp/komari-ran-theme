@@ -212,6 +212,14 @@ export function OverviewPage({
     [pingTargets],
   )
 
+  // Per-bucket midpoint timestamps for chart tooltips (1H window, 60 buckets).
+  const bucketTimes = useMemo(() => {
+    const now = Date.now()
+    const start = now - 60 * 60 * 1000
+    const stepMs = (60 * 60 * 1000) / 60
+    return Array.from({ length: 60 }, (_, i) => Math.round(start + (i + 0.5) * stepMs))
+  }, [])
+
   // Traffic series — last hour of summed bytes/s (net_in + net_out) across all nodes.
   const trafficSeries = useMemo(() => {
     const agg = history?.aggregate
@@ -408,7 +416,7 @@ export function OverviewPage({
               }
             >
               {pingSeries.length > 0 ? (
-                <PingChart series={pingSeries} width={340} height={140} />
+                <PingChart series={pingSeries} width={340} height={140} times={bucketTimes} />
               ) : (
                 <div
                   style={{

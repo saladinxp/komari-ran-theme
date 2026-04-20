@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchNodeLoadHistory, fetchPingHistory, type LoadHistory, type PingHistory } from '@/api/client'
+import { fetchNodeLoadHistory, fetchNodePingHistory, type LoadHistory, type PingHistory, type PingTask, type PingRecord } from '@/api/client'
 import { bucketLoadHistory } from '@/utils/load'
 
 /**
@@ -115,18 +115,23 @@ export function useGlobalHistory(
     const refresh = async () => {
       const windowMs = hours * 60 * 60 * 1000
 
-      // Kick off ping in parallel; load fans out per-node.
-      const pingPromise = fetchPingHistory(hours).catch(() => EMPTY_PING)
-
+      // Fan out load + ping per-node in parallel. Komari's global
+      // /api/records/ping?hours=N (no uuid) is unreliable on many deployments —
+      // it omits the `tasks` array, so the dashboard never gets target metadata.
+      // Per-node ping (uuid filter) always returns both tasks and records, so we
+      // fetch each node's ping and merge them.
       const histories = await pmap(
         uuids,
-        async (uuid): Promise<{ uuid: string; history: LoadHistory }> => {
-          try {
-            const history = await fetchNodeLoadHistory(uuid, hours)
-            return { uuid, history }
-          } catch {
-            return { uuid, history: { count: 0, records: [] } }
-          }
+        async (
+          uuid,
+        ): Promise<{ uuid: string; load: LoadHistory; ping: PingHistory }> => {
+          const [load, ping] = await Promise.all([
+            fetchNodeLoadHistory(uuid, hours).catch(() => ({ count: 0, records: [] }) as LoadHistory),
+            fetchNodePingHistory(uuid, hours).catch(
+              () => ({ count: 0, tasks: [], records: [] }) as PingHistory,
+            ),
+          ])
+          return { uuid, load, ping }
         },
         CONCURRENCY,
       )
@@ -141,8 +146,8 @@ export function useGlobalHistory(
       const cpuCount = new Array(BUCKETS).fill(0)
       const ramCount = new Array(BUCKETS).fill(0)
 
-      for (const { uuid, history } of histories) {
-        const series = bucketLoadHistory(history, BUCKETS, windowMs)
+      for (const { uuid, load } of histories) {
+        const series = bucketLoadHistory(load, BUCKETS, windowMs)
         byNode[uuid] = series
 
         for (let i = 0; i < BUCKETS; i++) {
@@ -167,40 +172,38 @@ export function useGlobalHistory(
         agg.ramMean[i] = ramCount[i] > 0 ? ramSum[i] / ramCount[i] : 0
       }
 
-      const ping = await pingPromise
-      if (cancelled) return
-
-      // Bucket ping records per-client into 60 mean-latency slots.
+      // Merge per-node ping into a single PingHistory + per-node ms series.
+      const tasksById = new Map<number, PingTask>()
+      const allRecords: PingRecord[] = []
       const pingByNode: Record<string, number[]> = {}
-      if (ping.records.length > 0) {
-        const now = Date.now()
-        const start = now - windowMs
-        const bucketMs = windowMs / BUCKETS
-        // Per-uuid: sums + counts to compute means.
-        const acc: Record<string, { sum: number[]; cnt: number[] }> = {}
-        for (const uuid of uuids) {
-          acc[uuid] = { sum: new Array(BUCKETS).fill(0), cnt: new Array(BUCKETS).fill(0) }
+      const now = Date.now()
+      const start = now - windowMs
+      const bucketMs = windowMs / BUCKETS
+      for (const { uuid, ping } of histories) {
+        for (const t of ping.tasks ?? []) {
+          if (!tasksById.has(t.id)) tasksById.set(t.id, t)
         }
-        for (const r of ping.records) {
-          if (!r.client || !acc[r.client]) continue
-          const t = new Date(r.time).getTime()
-          if (!Number.isFinite(t) || t < start) continue
-          const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor((t - start) / bucketMs)))
-          // Treat 0/negative ping (timeout/error sentinel) as no-data; otherwise it
-          // drags the mean toward 0 and the sparkline lies.
+        const sum = new Array(BUCKETS).fill(0)
+        const cnt = new Array(BUCKETS).fill(0)
+        for (const r of ping.records ?? []) {
+          // Stamp client onto the merged record so the global view can split by node.
+          allRecords.push({ ...r, client: r.client ?? uuid })
+          const tsec = new Date(r.time).getTime()
+          if (!Number.isFinite(tsec) || tsec < start) continue
+          const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor((tsec - start) / bucketMs)))
+          // Treat 0/negative ping (timeout/error sentinel) as no-data; otherwise
+          // it drags the mean toward 0 and the sparkline lies.
           if (r.value > 0) {
-            acc[r.client].sum[idx] += r.value
-            acc[r.client].cnt[idx] += 1
+            sum[idx] += r.value
+            cnt[idx] += 1
           }
         }
-        for (const uuid of uuids) {
-          const { sum, cnt } = acc[uuid]
-          pingByNode[uuid] = sum.map((s, i) => (cnt[i] > 0 ? s / cnt[i] : 0))
-        }
-      } else {
-        for (const uuid of uuids) {
-          pingByNode[uuid] = new Array(BUCKETS).fill(0)
-        }
+        pingByNode[uuid] = sum.map((s, i) => (cnt[i] > 0 ? s / cnt[i] : 0))
+      }
+      const ping: PingHistory = {
+        count: allRecords.length,
+        tasks: Array.from(tasksById.values()).sort((a, b) => a.id - b.id),
+        records: allRecords,
       }
 
       setState({ byNode, pingByNode, aggregate: agg, ping, loading: false })
