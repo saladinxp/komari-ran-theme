@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { HeroStats } from '@/components/panels/HeroStats'
@@ -50,6 +50,32 @@ export function OverviewPage({
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
+  const [group, setGroup] = useState<string>('ALL')
+
+  // Group options — derived from node.group field (user-defined grouping in Komari admin).
+  // Nodes without a group land in "未分组" so they're never invisible.
+  const groupOptions = useMemo(() => {
+    const seen = new Set<string>()
+    let hasUngrouped = false
+    for (const n of nodes) {
+      if (n.group && n.group.trim()) seen.add(n.group.trim())
+      else hasUngrouped = true
+    }
+    const groups = Array.from(seen).sort((a, b) => a.localeCompare(b))
+    if (hasUngrouped) groups.push('未分组')
+    // Only show the picker when there are at least two distinct groups.
+    if (groups.length < 2) return null
+    return [{ value: 'ALL', label: 'ALL' }, ...groups.map((g) => ({ value: g, label: g }))]
+  }, [nodes])
+
+  // Reset group selection if the chosen group disappears from the list.
+  useEffect(() => {
+    if (!groupOptions) {
+      if (group !== 'ALL') setGroup('ALL')
+      return
+    }
+    if (!groupOptions.some((opt) => opt.value === group)) setGroup('ALL')
+  }, [groupOptions, group])
 
   const heroStats = useMemo(() => {
     let online = 0
@@ -122,15 +148,21 @@ export function OverviewPage({
   }, [nodes, records, history])
 
   const filteredNodes = useMemo(() => {
-    if (filter === 'all') return nodes
     return nodes.filter((n) => {
+      // Group filter
+      if (group !== 'ALL') {
+        const ng = (n.group ?? '').trim()
+        if (group === '未分组' ? ng !== '' : ng !== group) return false
+      }
+      // Status filter
+      if (filter === 'all') return true
       const r = records[n.uuid]
       if (filter === 'on') return r?.online === true
       if (filter === 'off') return r?.online !== true
       if (filter === 'warn') return r?.online && (r.cpu ?? 0) > 80
       return true
     })
-  }, [nodes, records, filter])
+  }, [nodes, records, filter, group])
 
   const stats = useMemo(() => {
     let online = 0
@@ -314,6 +346,27 @@ export function OverviewPage({
               />
             </div>
           </div>
+
+          {/* Group filter — only rendered when more than one group exists. */}
+          {groupOptions && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginTop: -4,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Etch>GROUP</Etch>
+              <Segmented
+                size="sm"
+                value={group}
+                onChange={(v) => setGroup(v as string)}
+                options={groupOptions}
+              />
+            </div>
+          )}
 
           {/* Cards */}
           {filteredNodes.length === 0 ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { CardFrame } from '@/components/panels/CardFrame'
@@ -43,9 +43,37 @@ export function NodesPage({
   const [filter, setFilter] = useState<Filter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
   const [view, setView] = useState<View>('grid')
+  const [group, setGroup] = useState<string>('ALL')
+
+  const groupOptions = useMemo(() => {
+    const seen = new Set<string>()
+    let hasUngrouped = false
+    for (const n of nodes) {
+      if (n.group && n.group.trim()) seen.add(n.group.trim())
+      else hasUngrouped = true
+    }
+    const groups = Array.from(seen).sort((a, b) => a.localeCompare(b))
+    if (hasUngrouped) groups.push('未分组')
+    if (groups.length < 2) return null
+    return [{ value: 'ALL', label: 'ALL' }, ...groups.map((g) => ({ value: g, label: g }))]
+  }, [nodes])
+
+  useEffect(() => {
+    if (!groupOptions) {
+      if (group !== 'ALL') setGroup('ALL')
+      return
+    }
+    if (!groupOptions.some((opt) => opt.value === group)) setGroup('ALL')
+  }, [groupOptions, group])
 
   const filtered = useMemo(() => {
     const list = nodes.filter((n) => {
+      // Group filter
+      if (group !== 'ALL') {
+        const ng = (n.group ?? '').trim()
+        if (group === '未分组' ? ng !== '' : ng !== group) return false
+      }
+      // Status filter
       const r = records[n.uuid]
       if (filter === 'all') return true
       if (filter === 'on') return r?.online === true
@@ -69,7 +97,7 @@ export function NodesPage({
       },
     }
     return [...list].sort(sortFn[sortBy])
-  }, [nodes, records, filter, sortBy])
+  }, [nodes, records, filter, sortBy, group])
 
   const stats = useMemo(() => {
     let online = 0
@@ -167,6 +195,27 @@ export function NodesPage({
               />
             </div>
           </div>
+
+          {/* Group filter — only rendered when more than one group exists. */}
+          {groupOptions && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginTop: -4,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Etch>GROUP</Etch>
+              <Segmented
+                size="sm"
+                value={group}
+                onChange={(v) => setGroup(v as string)}
+                options={groupOptions}
+              />
+            </div>
+          )}
 
           {/* List */}
           {filtered.length === 0 ? (
