@@ -227,9 +227,13 @@ export function OverviewPage({
   }, [nodes, records])
 
   // ── Ping series — global mean latency per target, derived from records/ping ──
+  // Prefer history.ping (per-node fan-out, properly merged) over the old `ping`
+  // prop which comes from the unreliable global /api/records/ping endpoint that
+  // many Komari deployments respond to with empty `tasks`.
+  const pingSrc = history?.ping ?? ping
   const pingTargets = useMemo(
-    () => (ping && hasPingData(ping) ? aggregatePingByTarget(ping, 60, 60 * 60 * 1000, 4) : []),
-    [ping],
+    () => (pingSrc && hasPingData(pingSrc) ? aggregatePingByTarget(pingSrc, 60, 60 * 60 * 1000, 4) : []),
+    [pingSrc],
   )
   const pingSeries = useMemo(
     () => pingTargets.map((t) => ({ data: t.data, label: t.task.name })),
