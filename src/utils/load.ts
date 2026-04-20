@@ -52,8 +52,27 @@ export function bucketLoadHistory(
     const idx = Math.min(buckets - 1, Math.max(0, Math.floor((t - start) / bucketMs)))
     counts[idx] += 1
     if (r.cpu != null) sums.cpu[idx] += r.cpu
-    if (r.ram != null) sums.ram[idx] += r.ram
-    if (r.disk != null) sums.disk[idx] += r.disk
+    // ram + disk: Komari historically stores absolute bytes here even though
+    // some deployments emit percent. If value is bytes (>100 with a known
+    // total), convert; if already a percent, pass through.
+    if (r.ram != null) {
+      const pct =
+        r.ram <= 100
+          ? r.ram
+          : r.ram_total && r.ram_total > 0
+            ? (r.ram / r.ram_total) * 100
+            : 0
+      sums.ram[idx] += pct
+    }
+    if (r.disk != null) {
+      const pct =
+        r.disk <= 100
+          ? r.disk
+          : r.disk_total && r.disk_total > 0
+            ? (r.disk / r.disk_total) * 100
+            : 0
+      sums.disk[idx] += pct
+    }
     if (r.net_in != null) sums.netIn[idx] += r.net_in
     if (r.net_out != null) sums.netOut[idx] += r.net_out
     if (r.load != null) sums.load[idx] += r.load

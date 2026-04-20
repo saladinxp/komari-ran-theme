@@ -18,7 +18,7 @@ import type { KomariNode, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
-import { formatBytes } from '@/utils/format'
+import { formatBytes, formatBps } from '@/utils/format'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -53,16 +53,16 @@ export function OverviewPage({
 
   const heroStats = useMemo(() => {
     let online = 0
-    let warn = 0
-    let totalNetTx = 0
+    let liveTx = 0 // bytes/sec across the fleet
+    let liveRx = 0
+    let totalNetTx = 0 // since-boot cumulative
     let totalNetRx = 0
 
     for (const n of nodes) {
       const r = records[n.uuid]
-      if (r?.online) {
-        online++
-        if ((r.cpu ?? 0) > 80) warn++
-      }
+      if (r?.online) online++
+      liveTx += r?.network_tx ?? 0
+      liveRx += r?.network_rx ?? 0
       totalNetTx += r?.network_total_up ?? 0
       totalNetRx += r?.network_total_down ?? 0
     }
@@ -71,28 +71,18 @@ export function OverviewPage({
     const total = nodes.length
     const trafficStr = formatBytes(totalTraffic)
     const [trafficVal, trafficUnit] = trafficStr.split(' ')
+    const txStr = formatBps(liveTx).split(' ')
+    const rxStr = formatBps(liveRx).split(' ')
 
     // ── derive sparklines from real history ──
     const agg = history?.aggregate
-    const byNode = history?.byNode
     // online over time: bucket node-count (≈ # nodes that reported in that bucket)
     const onlineSpark = agg?.nodeCount ?? []
-    // degraded: per-bucket count of nodes whose cpu > 80
-    const degradedSpark = (() => {
-      if (!byNode) return [] as number[]
-      const buckets = 60
-      const out = new Array(buckets).fill(0)
-      for (const series of Object.values(byNode)) {
-        for (let i = 0; i < buckets; i++) {
-          if ((series.cpu[i] ?? 0) > 80) out[i] += 1
-        }
-      }
-      return out
-    })()
-    // traffic throughput: net_in + net_out summed bytes/s (use as visual rhythm)
+    // tx/rx per-bucket, summed across nodes (bytes/sec)
+    const txSpark = agg?.netOut ?? []
+    const rxSpark = agg?.netIn ?? []
+    // total throughput rhythm — combined
     const trafficSpark = agg ? agg.netIn.map((v, i) => v + (agg.netOut[i] ?? 0)) : []
-    // regions: kept flat (near-constant series isn't sparkline material) — use online count as proxy
-    const regionsSpark = onlineSpark
 
     return [
       {
@@ -103,28 +93,30 @@ export function OverviewPage({
         sparkColor: 'var(--signal-good)',
       },
       {
-        label: 'DEGRADED',
+        label: '↑ TX RATE',
         code: 'M02',
-        value: String(warn),
-        spark: degradedSpark,
-        sparkColor: 'var(--signal-warn)',
+        value: txStr[0] || '0',
+        // formatBps returns e.g. "1.23 MB/s"; HeroStats prepends a space before unit,
+        // strip "/s" so the cell reads "1.23 MB" with a tiny "/s" implied by the label.
+        unit: (txStr[1] || 'B/s').replace('/s', ''),
+        spark: txSpark,
+        sparkColor: 'var(--accent-bright)',
+      },
+      {
+        label: '↓ RX RATE',
+        code: 'M03',
+        value: rxStr[0] || '0',
+        unit: (rxStr[1] || 'B/s').replace('/s', ''),
+        spark: rxSpark,
+        sparkColor: 'var(--signal-good)',
       },
       {
         label: 'TRAFFIC TOTAL',
-        code: 'M03',
+        code: 'M04',
         value: trafficVal || '0',
         unit: trafficUnit || 'B',
         spark: trafficSpark,
         sparkColor: 'var(--accent)',
-      },
-      {
-        label: 'REGIONS',
-        code: 'M04',
-        value: String(
-          new Set(nodes.map((n) => n.region?.split('-')[0]).filter(Boolean)).size,
-        ),
-        spark: regionsSpark,
-        sparkColor: 'var(--signal-info)',
       },
     ]
   }, [nodes, records, history])
