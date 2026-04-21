@@ -1,8 +1,23 @@
 # 岚 (Ran) · Komari Probe Theme
 
 > 精密金工质感的 Komari 探针面板主题
+> Precision-machined hi-fi gear, rendered as a server monitoring panel.
 
 ![preview](./preview.png)
+
+## 截图
+
+### Overview · 总览
+
+![Overview](./docs/screenshots/overview.png)
+
+实时 16/17 在线 · ↑/↓ 速率 · 流量累计 · 节点卡内嵌 sparkline / heartbeat / ping 历史。GROUP / GRID·ROW / ALL·ONLINE·DEGR·OFF 三段式过滤。
+
+### Billing · 订阅与续期
+
+![Billing](./docs/screenshots/billing.png)
+
+按 `price` / `billing_cycle` / `currency` / `expired_at` 字段汇总,自动算月度/年度成本,USD/CNY/EUR/JPY/GBP/原始 6 货币切换(实时汇率 + 离线兜底)。Renewal Timeline 365 天进度条按紧急度三色分组,临近 ≤90 天 / 安全 >90 天可折叠收起。
 
 ## 设计理念
 
@@ -19,14 +34,37 @@
 
 | | 名称 | 用途 |
 |---|---|---|
-| 🌑 | **墨石 ran-night** | 深色,默认 |
-| 🌫️ | **雾色 ran-mist** | 暖奶油浅色 |
+| 🌑 | **墨石 ran-night** | 深色 |
+| 🌫️ | **雾色 ran-mist** | 暖奶油浅色,默认 |
 
 切换可在右上角 NIGHT/MIST 按钮,或由 Komari 主题设置默认值。
 
+## 页面
+
+| 路由 | 内容 |
+|---|---|
+| `#/overview` | 顶部 4 stat + 节点卡网格/行,组/状态过滤 |
+| `#/nodes` | 节点全列表,按 NAME/REGION/CPU/MEM/LOAD/EXPIRE 排序 |
+| `#/nodes/{uuid}` | 单节点详情,4 chart × 1H/6H/24H/7D 时长选择 |
+| `#/traffic` | 全网流量,Top Talkers,区域分布 |
+| `#/billing` | 订阅汇总,Renewal Timeline,Cost Trend·12M,By Continent |
+
 ## 安装
 
-前往 [Releases](https://github.com/saladinxp/komari-ran-theme/releases) 下载最新 zip,在 Komari 后台 → 主题设置 → 上传 zip 应用即可。
+前往 [Releases](https://github.com/saladinxp/komari-ran-theme/releases) 下载最新 zip,在 Komari 后台 → 主题管理 → 上传主题 应用。
+
+## Billing 字段要求
+
+Billing 页要工作,节点要在 Komari 后台填这几个字段(都没填也不会报错,Billing 页会显示空状态引导):
+
+| 字段 | 类型 | 例 |
+|---|---|---|
+| `price` | number | `12` (月费) / `-1` (免费/终身) |
+| `billing_cycle` | number (天) | `30` 月 / `90` 季 / `365` 年 / `1095` 三年 |
+| `currency` | string (符号) | `$` / `¥` / `€` / `£` |
+| `expired_at` | ISO 日期 | `2025-12-31` |
+
+¥ 符号歧义(CNY 还是 JPY)用启发式判断:月费 > 100 视为 JPY,否则 CNY。
 
 ## 数据接入
 
@@ -34,7 +72,9 @@
 
 - `GET /api/nodes` — 节点列表
 - `GET /api/public` — 站点配置(站点名、retention 等)
-- `WebSocket /api/clients` — 实时数据,自动重连,指数退避
+- `GET /api/records/load?uuid=X&hours=N` — 单节点负载历史
+- `GET /api/records/ping?uuid=X&hours=N` — 单节点 ping 历史
+- `WebSocket /api/clients` — 实时数据,1s 间隔轮询(请求-响应模式),自动重连
 
 API 不可达时(如本地 `npm run dev` 单独跑),会自动切到 mock 数据预览。
 
@@ -59,34 +99,12 @@ npm run build
 zip -rq komari-ran-vX.Y.Z.zip komari-theme.json preview.png dist/
 ```
 
-## 目录结构
-
-```
-src/
-├── styles/tokens.css           设计令牌 + 双主题色板 + 动画
-├── types/komari.ts             Komari API 类型(嵌套原始 + 扁平规范化)
-├── api/
-│   ├── client.ts               REST + WebSocket 客户端,自动重连
-│   └── normalize.ts            原始 → 内部统一结构
-├── hooks/
-│   └── useKomari.ts            数据流 hook
-├── utils/                      format / series
-├── data/mock.ts                开发期 mock(API 不可达时显示)
-├── components/
-│   ├── atoms/                  Etch / Numeric / StatusDot / SerialPlate / ProgressBar / Donut
-│   ├── charts/                 Sparkline / Heartbeat
-│   ├── cards/                  NodeCardCompact
-│   └── panels/                 Topbar
-├── pages/Overview.tsx
-├── App.tsx
-└── main.tsx
-```
-
 ## 技术栈
 
-- **Vite** — 构建
-- **React 19 + TypeScript** — 组件
-- **vite-plugin-singlefile** — 内联打包
+- **Vite + `vite-plugin-singlefile`** — 单文件 HTML 产物
+- **React 19 + TypeScript** — 25+ 模块化文件源 → 一个 dist/index.html
+- **Hash 路由** — Komari 嵌入环境最稳的路由方式
+- **CSS 变量** — 双主题切换零 JS,`data-theme` 属性切换
 
 ## 许可
 

@@ -9,6 +9,7 @@ import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
 import { StatusDot } from '@/components/atoms/StatusDot'
+import { Icon } from '@/components/atoms/icons'
 import { BarChart } from '@/components/charts/BarChart'
 import { hashFor } from '@/router/route'
 import type { KomariNode, KomariRecord } from '@/types/komari'
@@ -289,7 +290,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v0.9.1" />
+          <Footer version="v0.9.2" />
         </div>
       </div>
     )
@@ -395,15 +396,25 @@ export function BillingPage({
                       key={r.node.uuid}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '1fr 60px',
+                        gridTemplateColumns: '20px 1fr 60px',
                         alignItems: 'center',
-                        gap: 8,
+                        gap: 10,
                         padding: '8px 10px',
                         background: 'var(--bg-1)',
                         border: '1px solid color-mix(in oklab, var(--signal-bad) 25%, var(--edge-engrave))',
                         borderRadius: 4,
                       }}
                     >
+                      <span
+                        style={{
+                          color: 'var(--signal-bad)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {Icon.alert}
+                      </span>
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <span
                           style={{
@@ -821,7 +832,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v0.9.1" />
+        <Footer version="v0.9.2" />
       </div>
     </div>
   )

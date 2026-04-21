@@ -327,7 +327,26 @@ export function OverviewPage({
               <SerialPlate>N · {String(nodes.length).padStart(2, '0')}</SerialPlate>
               <Etch>{viewLabel}</Etch>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {groupOptions && (
+                <>
+                  <Etch>GROUP</Etch>
+                  <Segmented
+                    size="sm"
+                    value={group}
+                    onChange={(v) => setGroup(v as string)}
+                    options={groupOptions}
+                  />
+                  <span
+                    style={{
+                      width: 1,
+                      height: 14,
+                      background: 'var(--edge-engrave)',
+                      margin: '0 2px',
+                    }}
+                  />
+                </>
+              )}
               <Segmented
                 size="sm"
                 value={view}
@@ -351,26 +370,7 @@ export function OverviewPage({
             </div>
           </div>
 
-          {/* Group filter — only rendered when more than one group exists. */}
-          {groupOptions && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                marginTop: -4,
-                flexWrap: 'wrap',
-              }}
-            >
-              <Etch>GROUP</Etch>
-              <Segmented
-                size="sm"
-                value={group}
-                onChange={(v) => setGroup(v as string)}
-                options={groupOptions}
-              />
-            </div>
-          )}
+          {/* Group filter moved into the controls row above */}
 
           {/* Cards */}
           {filteredNodes.length === 0 ? (
