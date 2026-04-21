@@ -7,6 +7,7 @@ export type Route =
   | { name: 'traffic' }
   | { name: 'map' }
   | { name: 'alerts' }
+  | { name: 'billing' }
   | { name: 'settings' }
   | { name: '404'; raw: string }
 
@@ -32,6 +33,8 @@ export function parseHash(hash: string): Route {
       return { name: 'map' }
     case 'alerts':
       return { name: 'alerts' }
+    case 'billing':
+      return { name: 'billing' }
     case 'settings':
       return { name: 'settings' }
     default:

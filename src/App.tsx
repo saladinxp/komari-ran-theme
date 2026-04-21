@@ -3,6 +3,7 @@ import { OverviewPage } from '@/pages/Overview'
 import { NodesPage } from '@/pages/Nodes'
 import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
+import { BillingPage } from '@/pages/Billing'
 import { useKomari } from '@/hooks/useKomari'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
@@ -126,6 +127,19 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           history={globalHistory}
+        />
+      )
+
+    case 'billing':
+      return (
+        <BillingPage
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          lastUpdate={lastUpdate}
+          conn={conn}
         />
       )
 

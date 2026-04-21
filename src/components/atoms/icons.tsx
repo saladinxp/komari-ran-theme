@@ -82,4 +82,11 @@ export const Icon: Record<string, ReactNode> = {
       <path d="M9 1V4H12 M5 13V10H2" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   ),
+  billing: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1" />
+      <path d="M9 5C8.5 4.2 7.8 3.8 7 3.8C5.9 3.8 5 4.4 5 5.3C5 6.2 5.9 6.6 7 6.8C8.1 7 9 7.4 9 8.3C9 9.2 8.1 9.8 7 9.8C6.2 9.8 5.5 9.4 5 8.6" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      <path d="M7 2.8V3.8 M7 9.8V10.8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  ),
 }

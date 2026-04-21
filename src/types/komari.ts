@@ -28,7 +28,14 @@ export interface KomariNode {
   /** ISO date — node expiry */
   expired_at?: string
   price?: number
-  billing_cycle?: string
+  /**
+   * Billing cycle in **days** (Komari quirk: numeric, not "monthly"/"yearly"):
+   * 30=月, 90=季, 180=半年, 365=年, 1095=三年, -1=免费机.
+   * The API surface is sometimes stringified, so we accept both.
+   */
+  billing_cycle?: number | string
+  /** Currency symbol — e.g. "$", "¥", "€". From Komari node settings. */
+  currency?: string
   weight?: number
   /** When true, node is hidden from anonymous viewers */
   hidden?: boolean
