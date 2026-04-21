@@ -36,6 +36,8 @@ export interface KomariNode {
   billing_cycle?: number | string
   /** Currency symbol — e.g. "$", "¥", "€". From Komari node settings. */
   currency?: string
+  /** VPS / hosting provider name — Hetzner, Vultr, OVH, etc. May not be in Komari yet. */
+  provider?: string
   weight?: number
   /** When true, node is hidden from anonymous viewers */
   hidden?: boolean

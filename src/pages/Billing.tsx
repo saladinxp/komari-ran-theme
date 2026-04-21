@@ -9,6 +9,7 @@ import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
 import { StatusDot } from '@/components/atoms/StatusDot'
+import { BarChart } from '@/components/charts/BarChart'
 import { hashFor } from '@/router/route'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import { useExchangeRates } from '@/hooks/useExchangeRates'
@@ -18,6 +19,7 @@ import {
   convert,
   fmtMoney,
   fmtExpiry,
+  reconstructMonthlyCosts,
   type ParsedBilling,
 } from '@/utils/billing'
 
@@ -180,8 +182,11 @@ export function BillingPage({
   }, [rows])
 
   // Critical (≤30 days, still in future)
+  // Critical = subscriptions expiring within 7 days (true emergencies).
+  // The general "≤30 days" set is still surfaced separately as the
+  // EXPIRING · 30D HeroStat and as the warn-tier in Renewal Timeline.
   const critical = useMemo(
-    () => rows.filter((r) => r.parsed.daysLeft != null && r.parsed.daysLeft >= 0 && r.parsed.daysLeft <= 30),
+    () => rows.filter((r) => r.parsed.daysLeft != null && r.parsed.daysLeft >= 0 && r.parsed.daysLeft <= 7),
     [rows],
   )
 
@@ -209,6 +214,26 @@ export function BillingPage({
     return Array.from(map.values()).sort((a, b) => b.cost - a.cost)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, displayCode, rates])
+
+  // 12-month committed-cost trend, reconstructed from current subscriptions.
+  // This is honest about what it is — see the caption on the card.
+  const costTrend = useMemo(
+    () =>
+      reconstructMonthlyCosts(
+        rows,
+        (r) => r.node.expired_at,
+        (r) => Number(r.node.billing_cycle) || 30,
+        (r) => monthlyOf(r),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, displayCode, rates],
+  )
+  const trendAvg = costTrend.length > 0
+    ? costTrend.reduce((s, p) => s + p.total, 0) / costTrend.length
+    : 0
+  const trendPeak = costTrend.length > 0
+    ? Math.max(...costTrend.map((p) => p.total))
+    : 0
 
   const onlineCount = nodes.filter((n) => records[n.uuid]?.online === true).length
 
@@ -264,7 +289,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v0.9.0" />
+          <Footer version="v0.9.1" />
         </div>
       </div>
     )
@@ -354,145 +379,11 @@ export function BillingPage({
           {/* Renewal urgency rail */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
             <CardFrame title="Renewal Timeline" code="R · 01" action={<Etch>BY DAYS LEFT</Etch>}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {byExpiry.map((r) => {
-                  const dl = r.parsed.daysLeft
-                  const urgent = dl != null && dl <= 30 && dl >= 0
-                  const warn = dl != null && dl > 30 && dl <= 90
-                  const past = dl != null && dl < 0
-                  const c = past
-                    ? 'var(--signal-bad)'
-                    : urgent
-                      ? 'var(--signal-bad)'
-                      : warn
-                        ? 'var(--signal-warn)'
-                        : 'var(--signal-good)'
-                  const pct = dl == null ? 100 : Math.max(0, Math.min(100, (dl / 365) * 100))
-                  const m = monthlyOf(r)
-                  return (
-                    <a
-                      key={r.node.uuid}
-                      href={hashFor({ name: 'nodes', uuid: r.node.uuid })}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 70px 1fr 56px 90px',
-                        alignItems: 'center',
-                        gap: 10,
-                        fontSize: 11,
-                        color: 'inherit',
-                        textDecoration: 'none',
-                        padding: '2px 0',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                        <StatusDot status={r.online ? 'good' : 'bad'} size={5} />
-                        <span
-                          style={{
-                            color: 'var(--fg-0)',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {r.node.name || r.node.uuid.slice(0, 8)}
-                        </span>
-                      </div>
-                      <SerialPlate>{r.node.region || '—'}</SerialPlate>
-                      <div
-                        style={{
-                          position: 'relative',
-                          height: 6,
-                          background: 'var(--bg-inset)',
-                          border: '1px solid var(--edge-engrave)',
-                          borderRadius: 2,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: `${pct}%`,
-                            background: c,
-                            boxShadow: `0 0 4px ${c}`,
-                          }}
-                        />
-                        {[1, 3, 6, 9].map((mo) => (
-                          <div
-                            key={mo}
-                            style={{
-                              position: 'absolute',
-                              left: `${((mo * 30) / 365) * 100}%`,
-                              top: 0,
-                              bottom: 0,
-                              width: 1,
-                              background: 'var(--edge-bright)',
-                              opacity: 0.5,
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <span
-                        className="mono"
-                        style={{
-                          color: c,
-                          textAlign: 'right',
-                          fontWeight: 600,
-                          fontFamily: 'var(--font-mono)',
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
-                        {dl == null ? '—' : `${dl}d`}
-                      </span>
-                      <span
-                        style={{
-                          color: 'var(--fg-1)',
-                          textAlign: 'right',
-                          fontFamily: 'var(--font-mono)',
-                          fontVariantNumeric: 'tabular-nums',
-                          fontSize: 11,
-                        }}
-                      >
-                        {fmtRow(m, r)}/mo
-                      </span>
-                    </a>
-                  )
-                })}
-                {/* Month ruler */}
-                <div
-                  style={{
-                    marginTop: 4,
-                    paddingTop: 8,
-                    borderTop: '1px solid var(--edge-engrave)',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(13, 1fr)',
-                    fontSize: 9,
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--fg-3)',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  {['0', '1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '10m', '11m', '12m'].map(
-                    (l, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          textAlign: i === 0 ? 'left' : i === 12 ? 'right' : 'center',
-                        }}
-                      >
-                        {l}
-                      </span>
-                    ),
-                  )}
-                </div>
-              </div>
+              <RenewalTimelineBody byExpiry={byExpiry} monthlyOf={monthlyOf} fmtRow={fmtRow} />
             </CardFrame>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <CardFrame title="Critical · ≤30 days" code="R · 02">
+              <CardFrame title="Critical · ≤7 days" code="R · 02">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {critical.length === 0 && (
                     <div style={{ padding: '14px 4px' }}>
@@ -625,18 +516,19 @@ export function BillingPage({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '20px 1.5fr 90px 110px 110px 100px 90px',
+                  gridTemplateColumns: '20px 1.5fr 90px 110px 110px 110px 100px 90px',
                   padding: '10px 16px',
                   background: 'var(--bg-1)',
                   borderBottom: '1px solid var(--edge-mid)',
                   gap: 12,
                   alignItems: 'center',
-                  minWidth: 760,
+                  minWidth: 870,
                 }}
               >
                 <span></span>
                 <Etch>HOST</Etch>
                 <Etch>REGION</Etch>
+                <Etch>PROVIDER</Etch>
                 <Etch style={{ textAlign: 'right' }}>PRICE/MO</Etch>
                 <Etch style={{ textAlign: 'right' }}>YEARLY</Etch>
                 <Etch style={{ textAlign: 'center' }}>EXPIRES</Etch>
@@ -654,7 +546,7 @@ export function BillingPage({
                     href={hashFor({ name: 'nodes', uuid: r.node.uuid })}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '20px 1.5fr 90px 110px 110px 100px 90px',
+                      gridTemplateColumns: '20px 1.5fr 90px 110px 110px 110px 100px 90px',
                       padding: '10px 16px',
                       borderBottom: '1px solid var(--edge-engrave)',
                       gap: 12,
@@ -665,7 +557,7 @@ export function BillingPage({
                         : 'transparent',
                       textDecoration: 'none',
                       color: 'inherit',
-                      minWidth: 760,
+                      minWidth: 870,
                     }}
                   >
                     <StatusDot status={r.online ? 'good' : 'bad'} size={6} />
@@ -694,6 +586,17 @@ export function BillingPage({
                       </span>
                     </div>
                     <SerialPlate>{r.node.region || '—'}</SerialPlate>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: r.node.provider ? 'var(--fg-1)' : 'var(--fg-3)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {r.node.provider || '—'}
+                    </span>
                     <span
                       style={{
                         color: 'var(--fg-0)',
@@ -750,18 +653,18 @@ export function BillingPage({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '20px 1.5fr 90px 110px 110px 100px 90px',
+                  gridTemplateColumns: '20px 1.5fr 90px 110px 110px 110px 100px 90px',
                   padding: '14px 16px',
                   background: 'var(--bg-1)',
                   borderTop: '1px solid var(--edge-mid)',
                   gap: 12,
                   alignItems: 'baseline',
-                  minWidth: 760,
+                  minWidth: 870,
                 }}
               >
                 <span></span>
                 <span
-                  style={{ fontSize: 13, fontWeight: 600, gridColumn: 'span 2' }}
+                  style={{ fontSize: 13, fontWeight: 600, gridColumn: 'span 3' }}
                 >
                   TOTAL · {rows.length} subscriptions
                 </span>
@@ -786,69 +689,139 @@ export function BillingPage({
             </div>
           </CardFrame>
 
-          {/* Continent breakdown */}
-          <CardFrame title="By Continent · Spend" code="T · 05">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {continentRows.map((cr, i) => {
-                const pct = totalMonthly > 0 ? (cr.cost / totalMonthly) * 100 : 0
-                const palette = [
-                  'var(--accent)',
-                  'var(--signal-info)',
-                  'var(--signal-good)',
-                  'var(--signal-warn)',
-                  'var(--accent-dim)',
-                  'var(--signal-bad)',
-                ]
-                const color = palette[i % palette.length]
-                return (
-                  <div key={cr.en} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <span style={{ fontSize: 12, color: 'var(--fg-1)' }}>
-                        {cr.zh} · {cr.en}{' '}
-                        <span style={{ color: 'var(--fg-3)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
-                          ×{cr.count}
-                        </span>
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                        <Numeric
-                          value={displayCode === 'NATIVE' ? '混合' : fmtMoney(cr.cost, statCode)}
-                          size={13}
-                        />
-                        <Etch>{pct.toFixed(1)}%</Etch>
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        height: 4,
-                        background: 'var(--bg-inset)',
-                        border: '1px solid var(--edge-engrave)',
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                      }}
-                    >
+          {/* Bottom row: 12-month committed-cost trend + continent spend */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <CardFrame title="Cost Trend · 12M" code="T · 04" action={<Etch>COMMITTED</Etch>}>
+              <BarChart
+                data={costTrend.map((p) => p.total)}
+                labels={costTrend.map((p) => p.label)}
+                height={120}
+                color="var(--accent)"
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: '1px solid var(--edge-engrave)',
+                }}
+              >
+                <div>
+                  <Etch>12M AVG</Etch>
+                  <div>
+                    <Numeric
+                      value={displayCode === 'NATIVE' ? '混合' : fmtMoney(trendAvg, statCode)}
+                      unit="/mo"
+                      size={13}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Etch>PEAK</Etch>
+                  <div>
+                    <Numeric
+                      value={displayCode === 'NATIVE' ? '混合' : fmtMoney(trendPeak, statCode)}
+                      unit="/mo"
+                      size={13}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Etch>CURRENT</Etch>
+                  <div>
+                    <Numeric
+                      value={displayCode === 'NATIVE' ? '混合' : fmtMoney(totalMonthly, statCode)}
+                      unit="/mo"
+                      size={13}
+                      color="var(--accent-bright)"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: 9,
+                  color: 'var(--fg-3)',
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                ※ 由当前订阅状态倒推,反映承诺成本 · 非真实账单
+              </div>
+            </CardFrame>
+
+            <CardFrame title="By Continent · Spend" code="T · 05">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {continentRows.map((cr, i) => {
+                  const pct = totalMonthly > 0 ? (cr.cost / totalMonthly) * 100 : 0
+                  const palette = [
+                    'var(--accent)',
+                    'var(--signal-info)',
+                    'var(--signal-good)',
+                    'var(--signal-warn)',
+                    'var(--accent-dim)',
+                    'var(--signal-bad)',
+                  ]
+                  const color = palette[i % palette.length]
+                  return (
+                    <div key={cr.en} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div
                         style={{
-                          width: `${pct}%`,
-                          height: '100%',
-                          background: color,
-                          boxShadow: `0 0 4px ${color}`,
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
                         }}
-                      />
+                      >
+                        <span style={{ fontSize: 12, color: 'var(--fg-1)' }}>
+                          {cr.zh} · {cr.en}{' '}
+                          <span
+                            style={{
+                              color: 'var(--fg-3)',
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: 10,
+                            }}
+                          >
+                            ×{cr.count}
+                          </span>
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <Numeric
+                            value={displayCode === 'NATIVE' ? '混合' : fmtMoney(cr.cost, statCode)}
+                            size={13}
+                          />
+                          <Etch>{pct.toFixed(1)}%</Etch>
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          height: 4,
+                          background: 'var(--bg-inset)',
+                          border: '1px solid var(--edge-engrave)',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${pct}%`,
+                            height: '100%',
+                            background: color,
+                            boxShadow: `0 0 4px ${color}`,
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardFrame>
+                  )
+                })}
+              </div>
+            </CardFrame>
+          </div>
         </main>
 
-        <Footer version="v0.9.0" />
+        <Footer version="v0.9.1" />
       </div>
     </div>
   )
@@ -919,6 +892,312 @@ function CostDonut({ rows, monthlyOf, totalMonthly, statCode, displayCode }: Don
           size={size * 0.16}
         />
         <Etch size={8}>MONTHLY</Etch>
+      </div>
+    </div>
+  )
+}
+
+interface RenewalRowProps {
+  row: BillingRow
+  monthly: number
+  fmtRow: (amount: number, row: BillingRow) => string
+}
+
+/** One row inside Renewal Timeline. Color reflects urgency tier. */
+function RenewalRow({ row, monthly, fmtRow }: RenewalRowProps) {
+  const dl = row.parsed.daysLeft
+  const urgent = dl != null && dl <= 30 && dl >= 0
+  const warn = dl != null && dl > 30 && dl <= 90
+  const past = dl != null && dl < 0
+  const c = past
+    ? 'var(--signal-bad)'
+    : urgent
+      ? 'var(--signal-bad)'
+      : warn
+        ? 'var(--signal-warn)'
+        : 'var(--signal-good)'
+  const pct = dl == null ? 100 : Math.max(0, Math.min(100, (dl / 365) * 100))
+
+  return (
+    <a
+      href={hashFor({ name: 'nodes', uuid: row.node.uuid })}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 70px 1fr 56px 90px',
+        alignItems: 'center',
+        gap: 10,
+        fontSize: 11,
+        color: 'inherit',
+        textDecoration: 'none',
+        padding: '2px 0',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <StatusDot status={row.online ? 'good' : 'bad'} size={5} />
+        <span
+          style={{
+            color: 'var(--fg-0)',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {row.node.name || row.node.uuid.slice(0, 8)}
+        </span>
+      </div>
+      <SerialPlate>{row.node.region || '—'}</SerialPlate>
+      <div
+        style={{
+          position: 'relative',
+          height: 6,
+          background: 'var(--bg-inset)',
+          border: '1px solid var(--edge-engrave)',
+          borderRadius: 2,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${pct}%`,
+            background: c,
+            boxShadow: `0 0 4px ${c}`,
+          }}
+        />
+        {[1, 3, 6, 9].map((mo) => (
+          <div
+            key={mo}
+            style={{
+              position: 'absolute',
+              left: `${((mo * 30) / 365) * 100}%`,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              background: 'var(--edge-bright)',
+              opacity: 0.5,
+            }}
+          />
+        ))}
+      </div>
+      <span
+        style={{
+          color: c,
+          textAlign: 'right',
+          fontWeight: 600,
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {dl == null ? '—' : `${dl}d`}
+      </span>
+      <span
+        style={{
+          color: 'var(--fg-1)',
+          textAlign: 'right',
+          fontFamily: 'var(--font-mono)',
+          fontVariantNumeric: 'tabular-nums',
+          fontSize: 11,
+        }}
+      >
+        {fmtRow(monthly, row)}/mo
+      </span>
+    </a>
+  )
+}
+
+interface SectionHeaderProps {
+  label: string
+  count: number
+  tone: 'bad' | 'warn' | 'good'
+  open: boolean
+  onToggle: () => void
+}
+
+/** Collapsible section header for the Renewal Timeline urgency groups. */
+function SectionHeader({ label, count, tone, open, onToggle }: SectionHeaderProps) {
+  const color =
+    tone === 'bad'
+      ? 'var(--signal-bad)'
+      : tone === 'warn'
+        ? 'var(--signal-warn)'
+        : 'var(--signal-good)'
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        padding: '6px 0 6px 0',
+        background: 'transparent',
+        border: 'none',
+        borderTop: '1px solid var(--edge-engrave)',
+        cursor: 'pointer',
+        color: 'var(--fg-2)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 9,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+        textAlign: 'left',
+      }}
+    >
+      <span
+        style={{
+          display: 'inline-block',
+          width: 0,
+          height: 0,
+          borderLeft: '4px solid transparent',
+          borderRight: '4px solid transparent',
+          borderTop: `4px solid ${color}`,
+          transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+          transition: 'transform 120ms',
+        }}
+      />
+      <span style={{ color }}>{label}</span>
+      <span style={{ color: 'var(--fg-3)' }}>· {count}</span>
+    </button>
+  )
+}
+
+interface TimelineBodyProps {
+  byExpiry: BillingRow[]
+  monthlyOf: (r: BillingRow) => number
+  fmtRow: (amount: number, row: BillingRow) => string
+}
+
+/**
+ * Renewal Timeline body — splits rows by urgency tier and lets the user
+ * collapse the long-tail "safe" group. Past-due (negative days) folds
+ * into the urgent tier so it gets visual weight.
+ */
+function RenewalTimelineBody({ byExpiry, monthlyOf, fmtRow }: TimelineBodyProps) {
+  const urgent: BillingRow[] = []
+  const warn: BillingRow[] = []
+  const safe: BillingRow[] = []
+  const noExpiry: BillingRow[] = []
+
+  for (const r of byExpiry) {
+    const dl = r.parsed.daysLeft
+    if (dl == null) noExpiry.push(r)
+    else if (dl <= 30) urgent.push(r) // includes past-due (dl < 0)
+    else if (dl <= 90) warn.push(r)
+    else safe.push(r)
+  }
+
+  // Default-collapse the safe group when it has more than 4 rows; otherwise expand.
+  const [safeOpen, setSafeOpen] = useState(safe.length <= 4)
+  const [noExpiryOpen, setNoExpiryOpen] = useState(noExpiry.length <= 4)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Urgent — always shown */}
+      {urgent.length > 0 &&
+        urgent.map((r) => (
+          <RenewalRow
+            key={r.node.uuid}
+            row={r}
+            monthly={monthlyOf(r)}
+            fmtRow={fmtRow}
+          />
+        ))}
+
+      {/* Warn group — header + always expanded (usually short) */}
+      {warn.length > 0 && (
+        <>
+          <SectionHeader
+            label="临近 · ≤90 days"
+            count={warn.length}
+            tone="warn"
+            open
+            onToggle={() => {}}
+          />
+          {warn.map((r) => (
+            <RenewalRow
+              key={r.node.uuid}
+              row={r}
+              monthly={monthlyOf(r)}
+              fmtRow={fmtRow}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Safe group — collapsible */}
+      {safe.length > 0 && (
+        <>
+          <SectionHeader
+            label="安全 · >90 days"
+            count={safe.length}
+            tone="good"
+            open={safeOpen}
+            onToggle={() => setSafeOpen((v) => !v)}
+          />
+          {safeOpen &&
+            safe.map((r) => (
+              <RenewalRow
+                key={r.node.uuid}
+                row={r}
+                monthly={monthlyOf(r)}
+                fmtRow={fmtRow}
+              />
+            ))}
+        </>
+      )}
+
+      {/* No-expiry group — collapsible */}
+      {noExpiry.length > 0 && (
+        <>
+          <SectionHeader
+            label="无到期信息"
+            count={noExpiry.length}
+            tone="good"
+            open={noExpiryOpen}
+            onToggle={() => setNoExpiryOpen((v) => !v)}
+          />
+          {noExpiryOpen &&
+            noExpiry.map((r) => (
+              <RenewalRow
+                key={r.node.uuid}
+                row={r}
+                monthly={monthlyOf(r)}
+                fmtRow={fmtRow}
+              />
+            ))}
+        </>
+      )}
+
+      {/* Month ruler — always at the bottom */}
+      <div
+        style={{
+          marginTop: 4,
+          paddingTop: 8,
+          borderTop: '1px solid var(--edge-engrave)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(13, 1fr)',
+          fontSize: 9,
+          fontFamily: 'var(--font-mono)',
+          color: 'var(--fg-3)',
+          letterSpacing: '0.1em',
+        }}
+      >
+        {['0', '1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m', '10m', '11m', '12m'].map(
+          (l, i) => (
+            <span
+              key={i}
+              style={{
+                textAlign: i === 0 ? 'left' : i === 12 ? 'right' : 'center',
+              }}
+            >
+              {l}
+            </span>
+          ),
+        )}
       </div>
     </div>
   )

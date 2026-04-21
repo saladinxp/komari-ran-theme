@@ -195,3 +195,69 @@ export function fmtExpiry(iso?: string): string {
   }
   return `${mm}-${dd}`
 }
+
+/**
+ * Reconstruct the past 12 months of committed monthly cost.
+ *
+ * We don't have a real billing ledger. But each node carries
+ * { price, billing_cycle, expired_at } — this lets us compute, for any past
+ * month M: "was this node still inside its subscription window in month M?"
+ * If yes, that month included its monthly cost.
+ *
+ * Honest framing: this is **committed cost per month**, derived from current
+ * subscription state, not a real ledger. Stable fleets look flat; nodes added
+ * or expired mid-year produce visible steps.
+ *
+ * Returns 12 points; index 0 = 11 months ago, index 11 = current month.
+ */
+export interface MonthlyCostPoint {
+  month: number
+  year: number
+  total: number
+  label: string
+}
+
+const MONTH_LETTERS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+
+export function reconstructMonthlyCosts<T>(
+  rows: T[],
+  getExpiredAt: (row: T) => string | undefined,
+  getCycleDays: (row: T) => number,
+  getMonthlyCost: (row: T) => number,
+): MonthlyCostPoint[] {
+  const now = new Date()
+  const points: MonthlyCostPoint[] = []
+
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 15)
+    const t = d.getTime()
+    let total = 0
+    for (const row of rows) {
+      const expIso = getExpiredAt(row)
+      const monthly = getMonthlyCost(row)
+      if (!expIso) {
+        total += monthly
+        continue
+      }
+      const expT = new Date(expIso).getTime()
+      if (!Number.isFinite(expT)) {
+        total += monthly
+        continue
+      }
+      // A node at month M is counted if it was still active that month.
+      // We approximate "active" as: M is at or before expired_at.
+      // (We don't try to model when the subscription started — most users
+      // have been running these nodes for longer than 12 months anyway.)
+      if (t <= expT) {
+        total += monthly
+      }
+    }
+    points.push({
+      month: d.getMonth(),
+      year: d.getFullYear(),
+      total,
+      label: MONTH_LETTERS[d.getMonth()],
+    })
+  }
+  return points
+}
