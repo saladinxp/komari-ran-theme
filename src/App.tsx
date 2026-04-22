@@ -114,6 +114,7 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           history={globalHistory}
+          config={config}
         />
       )
 
@@ -142,6 +143,7 @@ export default function App() {
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
+          config={config}
         />
       )
 
@@ -158,6 +160,7 @@ export default function App() {
           conn={conn}
           ping={ping}
           history={globalHistory}
+          config={config}
         />
       )
   }

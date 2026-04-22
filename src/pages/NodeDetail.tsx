@@ -234,7 +234,7 @@ export function NodeDetailPage({
               </CardFrame>
             )}
           </main>
-          <Footer />
+          <Footer config={config} />
         </div>
       </div>
     )
@@ -776,7 +776,7 @@ export function NodeDetailPage({
           )}
         </main>
 
-        <Footer />
+        <Footer config={config} />
       </div>
     </div>
   )

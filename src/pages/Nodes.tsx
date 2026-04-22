@@ -7,7 +7,7 @@ import { NodeCardCompact } from '@/components/cards/NodeCardCompact'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
-import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
 import { hashFor } from '@/router/route'
@@ -28,6 +28,7 @@ interface Props {
   conn?: Conn
   lastUpdate?: number | null
   history?: GlobalHistoryState
+  config?: KomariPublicConfig
 }
 
 export function NodesPage({
@@ -39,6 +40,7 @@ export function NodesPage({
   conn = 'idle',
   lastUpdate,
   history,
+  config,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('name')
@@ -281,7 +283,7 @@ export function NodesPage({
           )}
         </main>
 
-        <Footer />
+        <Footer config={config} />
       </div>
     </div>
   )

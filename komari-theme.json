@@ -2,7 +2,7 @@
   "name": "Ran · 岚",
   "short": "ran",
   "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "author": "Miuler",
   "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
@@ -25,7 +25,7 @@
         "key": "version_tag",
         "name": "[ SYS.VER ] 版本号",
         "type": "string",
-        "default": "v0.9.4",
+        "default": "v0.9.5",
         "help": "页脚显示的版本标识"
       },
       {
@@ -45,6 +45,38 @@
         "type": "string",
         "default": "POWERED BY KOMARI",
         "help": "页脚右侧文字"
+      },
+      {
+        "name": "◇ BEIAN // 备案",
+        "type": "title"
+      },
+      {
+        "key": "icp_text",
+        "name": "[ ICP ] ICP 备案号",
+        "type": "string",
+        "default": "",
+        "help": "工信部 ICP 备案编号,例如 浙ICP备12345678号-1。留空则不显示。"
+      },
+      {
+        "key": "icp_url",
+        "name": "[ ICP ] ICP 备案链接",
+        "type": "string",
+        "default": "https://beian.miit.gov.cn",
+        "help": "ICP 备案号的跳转链接。留空则备案号显示为纯文本不可点击。"
+      },
+      {
+        "key": "police_text",
+        "name": "[ 公安 ] 公网安备号",
+        "type": "string",
+        "default": "",
+        "help": "公安备案编号,例如 浙公网安备 33010602012345号。留空则不显示。"
+      },
+      {
+        "key": "police_url",
+        "name": "[ 公安 ] 公网安备链接",
+        "type": "string",
+        "default": "https://beian.mps.gov.cn",
+        "help": "公网安备号的跳转链接。留空则备案号显示为纯文本不可点击。"
       }
     ]
   }

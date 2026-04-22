@@ -491,7 +491,7 @@ export function TrafficPage({
           <RegionDistribution traffic={nodeTraffic} />
         </main>
 
-        <Footer />
+        <Footer config={config} />
       </div>
     </div>
   )

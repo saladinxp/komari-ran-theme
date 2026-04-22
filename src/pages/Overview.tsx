@@ -14,7 +14,7 @@ import { PingChart } from '@/components/charts/PingChart'
 import { BarChart } from '@/components/charts/BarChart'
 import { Footer } from '@/components/panels/Footer'
 import { hashFor } from '@/router/route'
-import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
@@ -35,6 +35,7 @@ interface Props {
   lastUpdate?: number | null
   ping?: PingHistory
   history?: GlobalHistoryState
+  config?: KomariPublicConfig
 }
 
 export function OverviewPage({
@@ -47,6 +48,7 @@ export function OverviewPage({
   lastUpdate,
   ping,
   history,
+  config,
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
@@ -531,7 +533,7 @@ export function OverviewPage({
           </div>
         </main>
 
-        <Footer />
+        <Footer config={config} />
       </div>
     </div>
   )

@@ -12,7 +12,7 @@ import { StatusDot } from '@/components/atoms/StatusDot'
 import { Icon } from '@/components/atoms/icons'
 import { BarChart } from '@/components/charts/BarChart'
 import { hashFor } from '@/router/route'
-import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import { useExchangeRates } from '@/hooks/useExchangeRates'
 import {
   parseBilling,
@@ -36,6 +36,7 @@ interface Props {
   siteName?: string
   conn?: Conn
   lastUpdate?: number | null
+  config?: KomariPublicConfig
 }
 
 interface BillingRow {
@@ -121,6 +122,7 @@ export function BillingPage({
   siteName = '岚 · Komari',
   conn = 'idle',
   lastUpdate,
+  config,
 }: Props) {
   const [displayCode, setDisplayCode] = useState<DisplayCode>('USD')
   const { rates, fallback } = useExchangeRates()
@@ -290,7 +292,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v0.9.4" />
+          <Footer version="v0.9.5" config={config} />
         </div>
       </div>
     )
@@ -832,7 +834,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v0.9.4" />
+        <Footer version="v0.9.5" config={config} />
       </div>
     </div>
   )
