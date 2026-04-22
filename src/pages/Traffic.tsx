@@ -13,12 +13,54 @@ import { AreaChart } from '@/components/charts/AreaChart'
 import { BarChart } from '@/components/charts/BarChart'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
+import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { formatBps, formatBytes } from '@/utils/format'
 import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type SortBy = 'total' | 'tx' | 'rx' | 'live'
+type TimeKey = '1h' | '6h' | '24h' | '7d'
+
+interface TimeWindow {
+  key: TimeKey
+  label: string
+  hours: number
+  titleSuffix: string
+  /** Inline label spec for the bucket-axis below the area chart. */
+  axisLabels: string[]
+}
+
+const TIME_WINDOWS: TimeWindow[] = [
+  {
+    key: '1h',
+    label: '1H',
+    hours: 1,
+    titleSuffix: '1H',
+    axisLabels: ['-60m', '-50m', '-40m', '-30m', '-20m', '-10m', 'now'],
+  },
+  {
+    key: '6h',
+    label: '6H',
+    hours: 6,
+    titleSuffix: '6H',
+    axisLabels: ['-6h', '-5h', '-4h', '-3h', '-2h', '-1h', 'now'],
+  },
+  {
+    key: '24h',
+    label: '24H',
+    hours: 24,
+    titleSuffix: '24H',
+    axisLabels: ['-24h', '-20h', '-16h', '-12h', '-8h', '-4h', 'now'],
+  },
+  {
+    key: '7d',
+    label: '7D',
+    hours: 168,
+    titleSuffix: '7D',
+    axisLabels: ['-7d', '-6d', '-5d', '-4d', '-3d', '-2d', '-1d'],
+  },
+]
 
 function bytesShort(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0'
@@ -66,6 +108,18 @@ export function TrafficPage({
   history,
 }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>('total')
+  const [timeKey, setTimeKey] = useState<TimeKey>('1h')
+  const win = TIME_WINDOWS.find((w) => w.key === timeKey) ?? TIME_WINDOWS[0]
+
+  // Pull our own windowed history (independent of the global 1H one).
+  // For 1H we still use the prop-supplied global history (shared with Overview, no extra fetch).
+  // For 6H/24H/7D we fetch our own windowed slice.
+  const ownHistory = useGlobalHistory(
+    timeKey === '1h' ? [] : nodes.map((n) => n.uuid),
+    win.hours,
+  )
+  const effectiveHistory: GlobalHistoryState | undefined =
+    timeKey === '1h' ? history : ownHistory
 
   // Per-node traffic snapshot — pulled straight from live records.
   const nodeTraffic: NodeTraffic[] = useMemo(() => {
@@ -119,7 +173,7 @@ export function TrafficPage({
     const txStr = formatBytes(stats.totalTx).split(' ')
     const rxStr = formatBytes(stats.totalRx).split(' ')
     const liveStr = formatBps(stats.liveBps).split(' ')
-    const agg = history?.aggregate
+    const agg = effectiveHistory?.aggregate
     const txSpark = agg?.netOut ?? []
     const rxSpark = agg?.netIn ?? []
     const totalSpark = agg ? agg.netOut.map((v, i) => v + (agg.netIn[i] ?? 0)) : []
@@ -157,22 +211,23 @@ export function TrafficPage({
         sparkColor: 'var(--signal-info)',
       },
     ]
-  }, [stats, history])
+  }, [stats, effectiveHistory])
 
-  // Trend chart data — last hour of summed bytes/s across all nodes.
+  // Trend chart data — summed bytes/s across all nodes for the selected window.
   const trendData = useMemo(() => {
-    const agg = history?.aggregate
+    const agg = effectiveHistory?.aggregate
     if (!agg) return new Array(60).fill(0)
     return agg.netIn.map((v, i) => v + (agg.netOut[i] ?? 0))
-  }, [history])
+  }, [effectiveHistory])
 
-  // Per-bucket midpoint timestamps (1H, 60 buckets).
+  // Per-bucket midpoint timestamps for the selected window (60 buckets).
   const bucketTimes = useMemo(() => {
     const now = Date.now()
-    const start = now - 60 * 60 * 1000
-    const stepMs = (60 * 60 * 1000) / 60
+    const windowMs = win.hours * 60 * 60 * 1000
+    const start = now - windowMs
+    const stepMs = windowMs / 60
     return Array.from({ length: 60 }, (_, i) => Math.round(start + (i + 0.5) * stepMs))
-  }, [])
+  }, [win.hours])
 
   const subtitle = useMemo(() => {
     return `${nodes.length} PROBES · ${formatBytes(stats.total)} CUMULATIVE`
@@ -236,11 +291,21 @@ export function TrafficPage({
 
           <HeroStats stats={heroStats} />
 
-          {/* Trend — global 1H aggregate from per-node history */}
+          {/* Trend — windowed aggregate from per-node history */}
           <CardFrame
-            title="全网流量趋势 · 1H"
+            title={`全网流量趋势 · ${win.titleSuffix}`}
             code="T · 06"
-            action={<Etch>BYTES/SEC · ALL NODES</Etch>}
+            action={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Etch>WINDOW</Etch>
+                <Segmented
+                  size="sm"
+                  value={timeKey}
+                  onChange={(v) => setTimeKey(v as TimeKey)}
+                  options={TIME_WINDOWS.map((w) => ({ value: w.key, label: w.label }))}
+                />
+              </div>
+            }
           >
             <AreaChart
               data={trendData}
@@ -250,6 +315,8 @@ export function TrafficPage({
               yMin={0}
               yMax={Math.max(...trendData, 1) * 1.2 || 1}
               gradientId="traffic-trend"
+              times={bucketTimes}
+              formatValue={(v) => `${formatBps(v)}`}
             />
           </CardFrame>
 

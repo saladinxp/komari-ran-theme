@@ -1,7 +1,7 @@
 /**
  * Footer — shared across all pages. Keeps the version number in one place.
  */
-export function Footer({ version = 'v0.9.2' }: { version?: string }) {
+export function Footer({ version = 'v0.9.3' }: { version?: string }) {
   return (
     <footer
       style={{
