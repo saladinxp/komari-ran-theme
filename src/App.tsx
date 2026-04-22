@@ -100,6 +100,7 @@ export default function App() {
             siteName={siteName}
             lastUpdate={lastUpdate}
             conn={conn}
+            config={config}
           />
         )
       }
@@ -127,6 +128,7 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           history={globalHistory}
+          config={config}
         />
       )
 

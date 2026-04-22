@@ -14,7 +14,7 @@ import { AreaChart } from '@/components/charts/AreaChart'
 import { DualSeriesChart } from '@/components/charts/DualSeriesChart'
 import { PingChart } from '@/components/charts/PingChart'
 import { RadialGauge } from '@/components/charts/RadialGauge'
-import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import {
   formatBytes,
   formatPercent,
@@ -25,6 +25,7 @@ import {
 } from '@/utils/format'
 import { bucketLoadHistory, hasLoadData } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
+import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
 
@@ -87,6 +88,7 @@ interface Props {
   conn?: Conn
   lastUpdate?: number | null
   siteName?: string
+  config?: KomariPublicConfig
 }
 
 export function NodeDetailPage({
@@ -98,10 +100,21 @@ export function NodeDetailPage({
   conn = 'idle',
   lastUpdate,
   siteName = '岚 · Komari',
+  config,
 }: Props) {
   // Hooks must be called before any early return.
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
-  const windowSpec = WINDOWS.find((w) => w.key === windowKey) ?? WINDOWS[0]
+
+  // Filter windows by Komari record retention (record_preserve_time, in hours).
+  const retentionHours = getRecordRetentionHours(config)
+  const availableWindows = useMemo(
+    () => filterWindowsByRetention(WINDOWS, retentionHours),
+    [retentionHours],
+  )
+  const activeWindowKey: WindowKey = availableWindows.some((w) => w.key === windowKey)
+    ? windowKey
+    : availableWindows[0].key
+  const windowSpec = WINDOWS.find((w) => w.key === activeWindowKey) ?? WINDOWS[0]
   const history = useNodeHistory(uuid, windowSpec.hours)
   const [tab, setTab] = useState<'overview' | 'latency'>('overview')
 
@@ -468,9 +481,9 @@ export function NodeDetailPage({
               <Etch>WINDOW</Etch>
               <Segmented
                 size="sm"
-                value={windowKey}
+                value={activeWindowKey}
                 onChange={(v) => setWindowKey(v as WindowKey)}
-                options={WINDOWS.map((w) => ({ value: w.key, label: w.label }))}
+                options={availableWindows.map((w) => ({ value: w.key, label: w.label }))}
               />
             </div>
           </div>

@@ -11,10 +11,11 @@ import { Segmented } from '@/components/atoms/Segmented'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { BarChart } from '@/components/charts/BarChart'
-import type { KomariNode, KomariRecord } from '@/types/komari'
+import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { formatBps, formatBytes } from '@/utils/format'
+import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -82,6 +83,7 @@ interface Props {
   conn?: Conn
   lastUpdate?: number | null
   history?: GlobalHistoryState
+  config?: KomariPublicConfig
 }
 
 interface NodeTraffic {
@@ -106,20 +108,33 @@ export function TrafficPage({
   conn = 'idle',
   lastUpdate,
   history,
+  config,
 }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>('total')
   const [timeKey, setTimeKey] = useState<TimeKey>('1h')
-  const win = TIME_WINDOWS.find((w) => w.key === timeKey) ?? TIME_WINDOWS[0]
+
+  // Filter time windows by Komari's record retention (record_preserve_time, in hours).
+  // If retention is e.g. 24h, the 7D option simply isn't offered.
+  const retentionHours = getRecordRetentionHours(config)
+  const availableWindows = useMemo(
+    () => filterWindowsByRetention(TIME_WINDOWS, retentionHours),
+    [retentionHours],
+  )
+  // Clamp the active key to whatever's available (handles config arriving late).
+  const activeKey: TimeKey = availableWindows.some((w) => w.key === timeKey)
+    ? timeKey
+    : availableWindows[0].key
+  const win = TIME_WINDOWS.find((w) => w.key === activeKey) ?? TIME_WINDOWS[0]
 
   // Pull our own windowed history (independent of the global 1H one).
   // For 1H we still use the prop-supplied global history (shared with Overview, no extra fetch).
   // For 6H/24H/7D we fetch our own windowed slice.
   const ownHistory = useGlobalHistory(
-    timeKey === '1h' ? [] : nodes.map((n) => n.uuid),
+    activeKey === '1h' ? [] : nodes.map((n) => n.uuid),
     win.hours,
   )
   const effectiveHistory: GlobalHistoryState | undefined =
-    timeKey === '1h' ? history : ownHistory
+    activeKey === '1h' ? history : ownHistory
 
   // Per-node traffic snapshot — pulled straight from live records.
   const nodeTraffic: NodeTraffic[] = useMemo(() => {
@@ -300,9 +315,9 @@ export function TrafficPage({
                 <Etch>WINDOW</Etch>
                 <Segmented
                   size="sm"
-                  value={timeKey}
+                  value={activeKey}
                   onChange={(v) => setTimeKey(v as TimeKey)}
-                  options={TIME_WINDOWS.map((w) => ({ value: w.key, label: w.label }))}
+                  options={availableWindows.map((w) => ({ value: w.key, label: w.label }))}
                 />
               </div>
             }

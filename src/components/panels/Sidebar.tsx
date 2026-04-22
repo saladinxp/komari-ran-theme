@@ -27,7 +27,7 @@ interface Props {
   version?: string
 }
 
-export function Sidebar({ active, region = '岚 / RAN', version = 'v0.9.3' }: Props) {
+export function Sidebar({ active, region = '岚 / RAN', version = 'v0.9.4' }: Props) {
   return (
     <aside
       style={{

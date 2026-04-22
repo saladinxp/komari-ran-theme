@@ -100,12 +100,19 @@ export interface KomariRecord {
 /** /api/public — site config */
 export interface KomariPublicConfig {
   site_name?: string
+  sitename?: string
   description?: string
-  record_keep_days?: number
-  ping_keep_days?: number
+  /** Record retention in HOURS (not days). e.g. 720 = 30 days. */
+  record_preserve_time?: number
+  /** Ping record retention in HOURS. */
+  ping_record_preserve_time?: number
+  record_enabled?: boolean
   custom_css?: string
+  custom_head?: string
+  custom_body?: string
   footer_text?: string
   announce_text?: string
+  theme?: string
   theme_settings?: Record<string, unknown>
 }
 
