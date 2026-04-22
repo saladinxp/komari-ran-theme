@@ -5,20 +5,6 @@
 
 ![preview](./preview.png)
 
-## 截图
-
-### Overview · 总览
-
-![Overview](./docs/screenshots/overview.png)
-
-实时 16/17 在线 · ↑/↓ 速率 · 流量累计 · 节点卡内嵌 sparkline / heartbeat / ping 历史。GROUP / GRID·ROW / ALL·ONLINE·DEGR·OFF 三段式过滤。
-
-### Billing · 订阅与续期
-
-![Billing](./docs/screenshots/billing.png)
-
-按 `price` / `billing_cycle` / `currency` / `expired_at` 字段汇总,自动算月度/年度成本,USD/CNY/EUR/JPY/GBP/原始 6 货币切换(实时汇率 + 离线兜底)。Renewal Timeline 365 天进度条按紧急度三色分组,临近 ≤90 天 / 安全 >90 天可折叠收起。
-
 ## 设计理念
 
 灵感来自 Astell&Kern 等精密 HiFi 器材的 CNC 数控加工外观:阶梯倒角、蚀刻铭牌、凹陷显示窗、真 1px 发丝线。**每一根边线都有理由**。
