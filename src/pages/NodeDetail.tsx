@@ -477,14 +477,40 @@ export function NodeDetailPage({
               active={tab}
               onChange={(t) => setTab(t as 'overview' | 'latency')}
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Etch>WINDOW</Etch>
-              <Segmented
-                size="sm"
-                value={activeWindowKey}
-                onChange={(v) => setWindowKey(v as WindowKey)}
-                options={availableWindows.map((w) => ({ value: w.key, label: w.label }))}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                disabled
+                title="HUB · 单节点驾驶舱视图(开发中)"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  padding: '6px 12px',
+                  background: 'var(--bg-1)',
+                  color: 'var(--fg-3)',
+                  border: '1px solid var(--edge-engrave)',
+                  borderLeft: '2px solid var(--accent)',
+                  cursor: 'not-allowed',
+                  opacity: 0.7,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span style={{ color: 'var(--accent-bright)', fontWeight: 600 }}>HUB →</span>
+                <span style={{ color: 'var(--fg-3)' }}>SOON</span>
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Etch>WINDOW</Etch>
+                <Segmented
+                  size="sm"
+                  value={activeWindowKey}
+                  onChange={(v) => setWindowKey(v as WindowKey)}
+                  options={availableWindows.map((w) => ({ value: w.key, label: w.label }))}
+                />
+              </div>
             </div>
           </div>
 

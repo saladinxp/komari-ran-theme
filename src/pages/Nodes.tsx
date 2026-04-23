@@ -1,23 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
+import { Footer } from '@/components/panels/Footer'
 import { CardFrame } from '@/components/panels/CardFrame'
-import { NodeCardRow } from '@/components/cards/NodeCardRow'
-import { NodeCardCompact } from '@/components/cards/NodeCardCompact'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Segmented } from '@/components/atoms/Segmented'
+import { NodeTable, type SortKey, type SortDir } from '@/components/cards/NodeTable'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
-import { hashFor } from '@/router/route'
-import { Footer } from '@/components/panels/Footer'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type Filter = 'all' | 'on' | 'warn' | 'off'
-type View = 'grid' | 'row'
-type SortBy = 'name' | 'region' | 'cpu' | 'mem' | 'load' | 'expire'
 
 interface Props {
   nodes: KomariNode[]
@@ -27,10 +23,23 @@ interface Props {
   siteName?: string
   conn?: Conn
   lastUpdate?: number | null
+  /** Reserved for future inline sparklines — currently unused on the table view. */
   history?: GlobalHistoryState
   config?: KomariPublicConfig
 }
 
+/**
+ * NodesPage — high-density tabular list of all probes.
+ *
+ * Trade-off vs Overview: this page sacrifices visual flair (no cards, no
+ * sparklines, no traffic chart) in exchange for a single uninterrupted table
+ * sortable by any column. Designed for "I have 30 nodes, show me all of them
+ * at once and let me sort by CPU".
+ *
+ * Sort interaction: click a column header to sort by it; click again to flip
+ * direction. The default direction depends on the column (e.g. EXPIRE defaults
+ * ascending — soonest first; CPU/MEM/etc default descending — hottest first).
+ */
 export function NodesPage({
   nodes,
   records,
@@ -39,14 +48,14 @@ export function NodesPage({
   siteName = '岚 · Komari',
   conn = 'idle',
   lastUpdate,
-  history,
   config,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
-  const [sortBy, setSortBy] = useState<SortBy>('name')
-  const [view, setView] = useState<View>('grid')
   const [group, setGroup] = useState<string>('ALL')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
 
+  // Group options — derived from node.group field.
   const groupOptions = useMemo(() => {
     const seen = new Set<string>()
     let hasUngrouped = false
@@ -68,14 +77,28 @@ export function NodesPage({
     if (!groupOptions.some((opt) => opt.value === group)) setGroup('ALL')
   }, [groupOptions, group])
 
+  /**
+   * Toggle behavior: clicking the same column flips the direction; clicking a
+   * new column resets to that column's natural default (asc for EXPIRE/NAME,
+   * desc for percentage and load metrics).
+   */
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+    setSortKey(key)
+    // Defaults match the ColumnSpec.defaultDir in NodeTable, kept in sync here.
+    const descByDefault: SortKey[] = ['cpu', 'mem', 'disk', 'load', 'net']
+    setSortDir(descByDefault.includes(key) ? 'desc' : 'asc')
+  }
+
   const filtered = useMemo(() => {
     const list = nodes.filter((n) => {
-      // Group filter
       if (group !== 'ALL') {
         const ng = (n.group ?? '').trim()
         if (group === '未分组' ? ng !== '' : ng !== group) return false
       }
-      // Status filter
       const r = records[n.uuid]
       if (filter === 'all') return true
       if (filter === 'on') return r?.online === true
@@ -84,22 +107,39 @@ export function NodesPage({
       return true
     })
 
-    const sortFn: Record<SortBy, (a: KomariNode, b: KomariNode) => number> = {
+    const dir = sortDir === 'asc' ? 1 : -1
+    const cmp: Record<SortKey, (a: KomariNode, b: KomariNode) => number> = {
       name: (a, b) => (a.name ?? '').localeCompare(b.name ?? ''),
       region: (a, b) => (a.region ?? '').localeCompare(b.region ?? ''),
-      cpu: (a, b) => (records[b.uuid]?.cpu ?? 0) - (records[a.uuid]?.cpu ?? 0),
+      cpu: (a, b) => (records[a.uuid]?.cpu ?? 0) - (records[b.uuid]?.cpu ?? 0),
       mem: (a, b) =>
-        (resolveRamPercent(records[b.uuid]?.memory_used, records[b.uuid]?.memory_total) ?? 0) -
-        (resolveRamPercent(records[a.uuid]?.memory_used, records[a.uuid]?.memory_total) ?? 0),
-      load: (a, b) => (records[b.uuid]?.load1 ?? 0) - (records[a.uuid]?.load1 ?? 0),
+        (resolveRamPercent(records[a.uuid]?.memory_used, records[a.uuid]?.memory_total) ?? 0) -
+        (resolveRamPercent(records[b.uuid]?.memory_used, records[b.uuid]?.memory_total) ?? 0),
+      disk: (a, b) => {
+        const ap =
+          records[a.uuid]?.disk_used != null && records[a.uuid]?.disk_total
+            ? (records[a.uuid]!.disk_used! / records[a.uuid]!.disk_total!) * 100
+            : 0
+        const bp =
+          records[b.uuid]?.disk_used != null && records[b.uuid]?.disk_total
+            ? (records[b.uuid]!.disk_used! / records[b.uuid]!.disk_total!) * 100
+            : 0
+        return ap - bp
+      },
+      load: (a, b) => (records[a.uuid]?.load1 ?? 0) - (records[b.uuid]?.load1 ?? 0),
+      net: (a, b) => {
+        const av = (records[a.uuid]?.network_tx ?? 0) + (records[a.uuid]?.network_rx ?? 0)
+        const bv = (records[b.uuid]?.network_tx ?? 0) + (records[b.uuid]?.network_rx ?? 0)
+        return av - bv
+      },
       expire: (a, b) => {
         const at = a.expired_at ? new Date(a.expired_at).getTime() : Infinity
         const bt = b.expired_at ? new Date(b.expired_at).getTime() : Infinity
         return at - bt
       },
     }
-    return [...list].sort(sortFn[sortBy])
-  }, [nodes, records, filter, sortBy, group])
+    return [...list].sort((a, b) => cmp[sortKey](a, b) * dir)
+  }, [nodes, records, filter, group, sortKey, sortDir])
 
   const stats = useMemo(() => {
     let online = 0
@@ -109,7 +149,7 @@ export function NodesPage({
 
   const subtitle = useMemo(() => {
     const regions = new Set(nodes.map((n) => n.region?.split('-')[0]).filter(Boolean))
-    return `${nodes.length} NODES · ${regions.size} REGIONS · LIST VIEW`
+    return `${nodes.length} NODES · ${regions.size} REGIONS · TABLE VIEW`
   }, [nodes])
 
   return (
@@ -159,18 +199,11 @@ export function NodesPage({
                 Nodes
               </h2>
               <SerialPlate>{`SHOWN ${filtered.length}/${nodes.length}`}</SerialPlate>
-              <Etch>{view === 'grid' ? 'GRID' : 'ROW'} · BY {sortBy.toUpperCase()}</Etch>
+              <Etch>
+                BY {sortKey.toUpperCase()} · {sortDir === 'asc' ? '▲' : '▼'}
+              </Etch>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Segmented
-                size="sm"
-                value={view}
-                onChange={(v) => setView(v as View)}
-                options={[
-                  { value: 'grid', label: 'GRID' },
-                  { value: 'row', label: 'ROW' },
-                ]}
-              />
               <Segmented
                 size="sm"
                 value={filter}
@@ -182,23 +215,10 @@ export function NodesPage({
                   { value: 'off', label: 'OFF' },
                 ]}
               />
-              <Segmented
-                size="sm"
-                value={sortBy}
-                onChange={(v) => setSortBy(v as SortBy)}
-                options={[
-                  { value: 'name', label: 'NAME' },
-                  { value: 'region', label: 'REGION' },
-                  { value: 'cpu', label: 'CPU' },
-                  { value: 'mem', label: 'MEM' },
-                  { value: 'load', label: 'LOAD' },
-                  { value: 'expire', label: 'EXPIRE' },
-                ]}
-              />
             </div>
           </div>
 
-          {/* Group filter — only rendered when more than one group exists. */}
+          {/* Group filter — only when 2+ groups exist */}
           {groupOptions && (
             <div
               style={{
@@ -219,7 +239,7 @@ export function NodesPage({
             </div>
           )}
 
-          {/* List */}
+          {/* Table or empty state */}
           {filtered.length === 0 ? (
             <CardFrame title="No probes" code="∅">
               <div
@@ -236,50 +256,14 @@ export function NodesPage({
                 {nodes.length === 0 ? 'NO NODES CONFIGURED' : 'NO NODES MATCH FILTER'}
               </div>
             </CardFrame>
-          ) : view === 'grid' ? (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: 14,
-              }}
-            >
-              {filtered.map((node) => (
-                <a
-                  key={node.uuid}
-                  href={hashFor({ name: 'nodes', uuid: node.uuid })}
-                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                >
-                  <NodeCardCompact
-                    node={node}
-                    record={records[node.uuid]}
-                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
-                    pingSpark={history?.pingByNode[node.uuid] ?? []}
-                  />
-                </a>
-              ))}
-            </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filtered.map((node) => (
-                <a
-                  key={node.uuid}
-                  href={hashFor({ name: 'nodes', uuid: node.uuid })}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    display: 'block',
-                  }}
-                >
-                  <NodeCardRow
-                    node={node}
-                    record={records[node.uuid]}
-                    netSpark={history?.byNode[node.uuid]?.netOut ?? []}
-                    pingSpark={history?.pingByNode[node.uuid] ?? []}
-                  />
-                </a>
-              ))}
-            </div>
+            <NodeTable
+              nodes={filtered}
+              records={records}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
           )}
         </main>
 
@@ -288,4 +272,3 @@ export function NodesPage({
     </div>
   )
 }
-
