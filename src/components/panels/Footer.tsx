@@ -94,9 +94,9 @@ export function Footer({ version = 'v0.9.5', config }: FooterProps) {
           target="_blank"
           rel="noopener noreferrer"
           style={linkStyle}
-          title="GitHub 仓库 · 开源主题,欢迎下载使用"
+          title="作者 Miuler · GitHub 仓库 · 开源主题,欢迎下载使用"
         >
-          GITHUB
+          MIULER
         </a>
       </span>
       <span
