@@ -17,9 +17,10 @@
       {
         "key": "default_theme",
         "name": "[ MODE ] 默认主题",
-        "type": "string",
+        "type": "select",
+        "options": "ran-night,ran-mist",
         "default": "ran-night",
-        "help": "页面首次加载时的默认主题。可选 ran-night(墨石,深色)或 ran-mist(雾色,浅色)。用户切换后浏览器会记住偏好。"
+        "help": "页面首次加载时的默认主题。ran-night = 墨石(深色),ran-mist = 雾色(浅色)。用户切换后浏览器会记住偏好。"
       },
       {
         "key": "version_tag",
