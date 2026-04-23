@@ -38,6 +38,7 @@ import {
 import { bucketLoadHistory } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
+import { useElementWidth } from '@/hooks/useElementWidth'
 import { hashFor } from '@/router/route'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -656,6 +657,16 @@ export function HubPage({
     return n
   }, [nodes, records])
 
+  // Responsive layout — measure the inner content area and pick a column
+  // strategy based on available width. The ratchet:
+  //   ≥ 1500px → 3 cols (left identity / center charts / right alerts+heartbeat)
+  //   1080..1500 → 2 cols up top (left / center) and the right group sinks
+  //                to its own row below as a 3-card horizontal strip
+  //   < 1080px (mobile/half-width) → fully stacked single column
+  const [mainRef, mainWidth] = useElementWidth<HTMLDivElement>(1400)
+  const layoutMode: 'wide' | 'mid' | 'narrow' =
+    mainWidth >= 1500 ? 'wide' : mainWidth >= 1080 ? 'mid' : 'narrow'
+
   // Roster-load-vs-uuid-not-found discrimination (same pattern as NodeDetail).
   if (!node) {
     const stillLoading = nodes.length === 0
@@ -837,6 +848,7 @@ export function HubPage({
         </div>
 
         <main
+          ref={mainRef}
           style={{
             padding: 16,
             display: 'flex',
@@ -844,11 +856,19 @@ export function HubPage({
             gap: 14,
           }}
         >
-          {/* Top zone: 3-column grid — identity/system | resources/charts | alerts/heartbeat */}
+          {/* Top zone: layout adapts to available width.
+              wide  → 3 cols: identity | charts | alerts/heartbeat/ping
+              mid   → 2 cols: identity | charts; right group becomes a strip below
+              narrow → fully stacked single column */}
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 320px)',
+              gridTemplateColumns:
+                layoutMode === 'wide'
+                  ? 'minmax(280px, 320px) minmax(0, 1fr) minmax(280px, 340px)'
+                  : layoutMode === 'mid'
+                    ? 'minmax(280px, 320px) minmax(0, 1fr)'
+                    : '1fr',
               gap: 14,
               alignItems: 'flex-start',
             }}
@@ -1107,8 +1127,49 @@ export function HubPage({
               </CardFrame>
             </div>
 
-            {/* ── COL 3: alerts + heartbeat + latency targets ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* ── COL 3: alerts + heartbeat + latency targets (only in wide mode) ── */}
+            {layoutMode === 'wide' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <CardFrame
+                  title="Recent Alerts"
+                  code="ALT · 09"
+                  action={
+                    <StatusBadge
+                      status={online ? 'good' : 'bad'}
+                      label={online ? 'OK' : 'OFFLINE'}
+                    />
+                  }
+                >
+                  <AlertsList alerts={alerts} />
+                </CardFrame>
+
+                <CardFrame title="Heartbeat · 7d" code="HRT · 10">
+                  <div style={{ padding: 12 }}>
+                    <HeartbeatStrip cells={heartbeatCells} />
+                  </div>
+                </CardFrame>
+
+                <CardFrame title="Ping Targets" code="LAT · 11">
+                  <div style={{ padding: 12 }}>
+                    <TargetLatencyList targets={targetSummaries} />
+                  </div>
+                </CardFrame>
+              </div>
+            )}
+          </div>
+
+          {/* mid/narrow: right group sinks below as its own row.
+              mid → 3-card horizontal strip; narrow → single stacked column. */}
+          {layoutMode !== 'wide' && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  layoutMode === 'mid' ? 'repeat(3, minmax(0, 1fr))' : '1fr',
+                gap: 14,
+                alignItems: 'flex-start',
+              }}
+            >
               <CardFrame
                 title="Recent Alerts"
                 code="ALT · 09"
@@ -1134,7 +1195,7 @@ export function HubPage({
                 </div>
               </CardFrame>
             </div>
-          </div>
+          )}
 
           {/* Bottom telemetry bar — instant snapshot */}
           <TelemetryBar record={record} online={online} />
