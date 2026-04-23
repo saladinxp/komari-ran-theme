@@ -4,6 +4,7 @@ import { NodesPage } from '@/pages/Nodes'
 import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
 import { BillingPage } from '@/pages/Billing'
+import { HubPage } from '@/pages/Hub'
 import { useKomari } from '@/hooks/useKomari'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
@@ -86,8 +87,40 @@ export default function App() {
 
   const siteName = config?.site_name ?? '岚 · Komari'
 
+  // Pick a default uuid for the Hub sidebar entry. Prefer the first online
+  // node so the cockpit lands on something interesting. Fall back to the
+  // first node, and finally undefined (which disables the sidebar entry).
+  const hubTargetUuid = useMemo(() => {
+    const firstOnline = displayNodes.find((n) => displayRecords[n.uuid]?.online)
+    return firstOnline?.uuid ?? displayNodes[0]?.uuid
+  }, [displayNodes, displayRecords])
+
   // Route dispatch
   switch (route.name) {
+    case 'hub': {
+      // Hub needs a uuid; if missing, redirect to the default target via 404.
+      const target = route.uuid ?? hubTargetUuid
+      if (!target) {
+        // No nodes at all — fall through to overview which already handles empty-state nicely.
+        break
+      }
+      return (
+        <HubPage
+          uuid={target}
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          lastUpdate={lastUpdate}
+          conn={conn}
+          config={config}
+          ping={ping}
+          hubTargetUuid={hubTargetUuid}
+        />
+      )
+    }
+
     case 'nodes':
       if (route.uuid) {
         return (
@@ -101,6 +134,7 @@ export default function App() {
             lastUpdate={lastUpdate}
             conn={conn}
             config={config}
+            hubTargetUuid={hubTargetUuid}
           />
         )
       }
@@ -115,6 +149,7 @@ export default function App() {
           conn={conn}
           history={globalHistory}
           config={config}
+          hubTargetUuid={hubTargetUuid}
         />
       )
 
@@ -130,6 +165,7 @@ export default function App() {
           conn={conn}
           history={globalHistory}
           config={config}
+          hubTargetUuid={hubTargetUuid}
         />
       )
 
@@ -144,6 +180,7 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           config={config}
+          hubTargetUuid={hubTargetUuid}
         />
       )
 
@@ -161,7 +198,25 @@ export default function App() {
           ping={ping}
           history={globalHistory}
           config={config}
+          hubTargetUuid={hubTargetUuid}
         />
       )
   }
+
+  // Fallback (e.g. hub with no target and no nodes): render Overview.
+  return (
+    <OverviewPage
+      nodes={displayNodes}
+      records={displayRecords}
+      theme={theme}
+      onTheme={setTheme}
+      siteName={siteName}
+      lastUpdate={lastUpdate}
+      conn={conn}
+      ping={ping}
+      history={globalHistory}
+      config={config}
+      hubTargetUuid={hubTargetUuid}
+    />
+  )
 }

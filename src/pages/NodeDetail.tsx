@@ -89,6 +89,7 @@ interface Props {
   lastUpdate?: number | null
   siteName?: string
   config?: KomariPublicConfig
+  hubTargetUuid?: string
 }
 
 export function NodeDetailPage({
@@ -101,6 +102,7 @@ export function NodeDetailPage({
   lastUpdate,
   siteName = '岚 · Komari',
   config,
+  hubTargetUuid,
 }: Props) {
   // Hooks must be called before any early return.
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
@@ -172,7 +174,7 @@ export function NodeDetailPage({
           minHeight: '100vh',
         }}
       >
-        <Sidebar active="nodes" />
+        <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
@@ -312,7 +314,7 @@ export function NodeDetailPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="nodes" />
+      <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -478,10 +480,9 @@ export function NodeDetailPage({
               onChange={(t) => setTab(t as 'overview' | 'latency')}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                disabled
-                title="HUB · 单节点驾驶舱视图(开发中)"
+              <a
+                href={hashFor({ name: 'hub', uuid })}
+                title="HUB · 单节点驾驶舱视图"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 10,
@@ -489,19 +490,19 @@ export function NodeDetailPage({
                   textTransform: 'uppercase',
                   padding: '6px 12px',
                   background: 'var(--bg-1)',
-                  color: 'var(--fg-3)',
+                  color: 'var(--accent-bright)',
                   border: '1px solid var(--edge-engrave)',
                   borderLeft: '2px solid var(--accent)',
-                  cursor: 'not-allowed',
-                  opacity: 0.7,
+                  cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
+                  textDecoration: 'none',
+                  fontWeight: 600,
                 }}
               >
-                <span style={{ color: 'var(--accent-bright)', fontWeight: 600 }}>HUB →</span>
-                <span style={{ color: 'var(--fg-3)' }}>SOON</span>
-              </button>
+                HUB →
+              </a>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Etch>WINDOW</Etch>
                 <Segmented

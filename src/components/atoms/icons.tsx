@@ -5,6 +5,14 @@
 import type { ReactNode } from 'react'
 
 export const Icon: Record<string, ReactNode> = {
+  hub: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1" />
+      <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1" />
+      <circle cx="7" cy="7" r="0.8" fill="currentColor" />
+      <path d="M7 0V2.5 M7 11.5V14 M0 7H2.5 M11.5 7H14" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  ),
   cpu: (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <rect x="3" y="3" width="8" height="8" stroke="currentColor" strokeWidth="1" />

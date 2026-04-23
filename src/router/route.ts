@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 export type Route =
   | { name: 'overview' }
   | { name: 'nodes'; uuid?: string }
+  | { name: 'hub'; uuid?: string }
   | { name: 'ping' }
   | { name: 'traffic' }
   | { name: 'map' }
@@ -24,6 +25,8 @@ export function parseHash(hash: string): Route {
       return { name: 'overview' }
     case 'nodes':
       return { name: 'nodes', uuid: parts[1] }
+    case 'hub':
+      return { name: 'hub', uuid: parts[1] }
     case 'ping':
       return { name: 'ping' }
     case 'traffic':
@@ -47,6 +50,8 @@ export function hashFor(route: Route): string {
   switch (route.name) {
     case 'nodes':
       return route.uuid ? `#/nodes/${route.uuid}` : '#/nodes'
+    case 'hub':
+      return route.uuid ? `#/hub/${route.uuid}` : '#/hub'
     case '404':
       return `#/${route.raw}`
     default:

@@ -10,24 +10,53 @@ interface NavItem {
   icon: ReactNode
   /** Pages that exist; others render as visible-but-disabled. */
   enabled: boolean
+  /** When set, this nav item links to a dynamic uuid-suffixed route instead of the bare name. */
+  uuidLink?: string
 }
 
-const NAV: NavItem[] = [
-  { id: 'overview', label: 'Overview', icon: Icon.server, enabled: true },
-  { id: 'nodes', label: 'Nodes', icon: Icon.cpu, enabled: true },
-  { id: 'traffic', label: 'Traffic', icon: Icon.net, enabled: true },
-  { id: 'billing', label: 'Billing', icon: Icon.settings, enabled: true },
-  { id: 'map', label: 'Geo Map', icon: Icon.globe, enabled: false },
-  { id: 'alerts', label: 'Alerts', icon: Icon.alert, enabled: false },
+const NAV_BASE: Omit<NavItem, 'enabled' | 'uuidLink'>[] = [
+  { id: 'overview', label: 'Overview', icon: Icon.server },
+  { id: 'nodes', label: 'Nodes', icon: Icon.cpu },
+  { id: 'hub', label: 'Hub', icon: Icon.hub },
+  { id: 'traffic', label: 'Traffic', icon: Icon.net },
+  { id: 'billing', label: 'Billing', icon: Icon.settings },
+  { id: 'map', label: 'Geo Map', icon: Icon.globe },
+  { id: 'alerts', label: 'Alerts', icon: Icon.alert },
 ]
 
 interface Props {
   active: Route['name']
   region?: string
   version?: string
+  /**
+   * Default uuid the Hub link should target. The Hub page lives at
+   * `#/hub/{uuid}` — there's no listing view, so the sidebar entry needs a
+   * concrete node to point at. Callers should pass a sensible default
+   * (typically the first online node). When undefined, the Hub item
+   * disables itself rather than dead-ending on an empty uuid.
+   */
+  hubTargetUuid?: string
 }
 
-export function Sidebar({ active, region = '岚 / RAN', version = 'v0.9.6' }: Props) {
+export function Sidebar({
+  active,
+  region = '岚 / RAN',
+  version = 'v0.9.7',
+  hubTargetUuid,
+}: Props) {
+  const nav: NavItem[] = NAV_BASE.map((item) => {
+    if (item.id === 'hub') {
+      return {
+        ...item,
+        enabled: !!hubTargetUuid,
+        uuidLink: hubTargetUuid,
+      }
+    }
+    if (item.id === 'map' || item.id === 'alerts') {
+      return { ...item, enabled: false }
+    }
+    return { ...item, enabled: true }
+  })
   return (
     <aside
       style={{
@@ -78,7 +107,7 @@ export function Sidebar({ active, region = '岚 / RAN', version = 'v0.9.6' }: Pr
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', padding: 8, gap: 1 }}>
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const isActive = active === item.id
           const disabled = !item.enabled
 
@@ -86,10 +115,16 @@ export function Sidebar({ active, region = '岚 / RAN', version = 'v0.9.6' }: Pr
             ? { onClick: (e: React.MouseEvent) => e.preventDefault(), 'aria-disabled': true }
             : {}
 
+          // Hub uses uuid-suffixed routes; everything else just uses the name.
+          const href =
+            item.id === 'hub' && item.uuidLink
+              ? hashFor({ name: 'hub', uuid: item.uuidLink })
+              : hashFor({ name: item.id } as Route)
+
           return (
             <a
               key={item.id}
-              href={hashFor({ name: item.id } as Route)}
+              href={href}
               {...linkProps}
               style={{
                 display: 'flex',

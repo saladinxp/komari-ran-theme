@@ -36,6 +36,7 @@ interface Props {
   ping?: PingHistory
   history?: GlobalHistoryState
   config?: KomariPublicConfig
+  hubTargetUuid?: string
 }
 
 export function OverviewPage({
@@ -49,6 +50,7 @@ export function OverviewPage({
   ping,
   history,
   config,
+  hubTargetUuid,
 }: Props) {
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
@@ -287,7 +289,7 @@ export function OverviewPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="overview" />
+      <Sidebar active="overview" hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar

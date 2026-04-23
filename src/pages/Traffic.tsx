@@ -84,6 +84,7 @@ interface Props {
   lastUpdate?: number | null
   history?: GlobalHistoryState
   config?: KomariPublicConfig
+  hubTargetUuid?: string
 }
 
 interface NodeTraffic {
@@ -109,6 +110,7 @@ export function TrafficPage({
   lastUpdate,
   history,
   config,
+  hubTargetUuid,
 }: Props) {
   const [sortBy, setSortBy] = useState<SortBy>('total')
   const [timeKey, setTimeKey] = useState<TimeKey>('1h')
@@ -263,7 +265,7 @@ export function TrafficPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="traffic" />
+      <Sidebar active="traffic" hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar

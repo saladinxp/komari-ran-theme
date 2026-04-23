@@ -37,6 +37,7 @@ interface Props {
   conn?: Conn
   lastUpdate?: number | null
   config?: KomariPublicConfig
+  hubTargetUuid?: string
 }
 
 interface BillingRow {
@@ -123,6 +124,7 @@ export function BillingPage({
   conn = 'idle',
   lastUpdate,
   config,
+  hubTargetUuid,
 }: Props) {
   const [displayCode, setDisplayCode] = useState<DisplayCode>('USD')
   const { rates, fallback } = useExchangeRates()
@@ -260,7 +262,7 @@ export function BillingPage({
           minHeight: '100vh',
         }}
       >
-        <Sidebar active="billing" />
+        <Sidebar active="billing" hubTargetUuid={hubTargetUuid} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
@@ -292,7 +294,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v0.9.6" config={config} />
+          <Footer version="v0.9.7" config={config} />
         </div>
       </div>
     )
@@ -308,7 +310,7 @@ export function BillingPage({
         minHeight: '100vh',
       }}
     >
-      <Sidebar active="billing" />
+      <Sidebar active="billing" hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -834,7 +836,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v0.9.6" config={config} />
+        <Footer version="v0.9.7" config={config} />
       </div>
     </div>
   )

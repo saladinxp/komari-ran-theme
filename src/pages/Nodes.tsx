@@ -26,6 +26,7 @@ interface Props {
   /** Reserved for future inline sparklines — currently unused on the table view. */
   history?: GlobalHistoryState
   config?: KomariPublicConfig
+  hubTargetUuid?: string
 }
 
 /**
@@ -49,6 +50,7 @@ export function NodesPage({
   conn = 'idle',
   lastUpdate,
   config,
+  hubTargetUuid,
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [group, setGroup] = useState<string>('ALL')
@@ -161,7 +163,7 @@ export function NodesPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="nodes" />
+      <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
