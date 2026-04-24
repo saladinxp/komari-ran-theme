@@ -17,6 +17,7 @@ import { Sidebar } from '@/components/panels/Sidebar'
 import { Topbar } from '@/components/panels/Topbar'
 import { CardFrame } from '@/components/panels/CardFrame'
 import { Footer } from '@/components/panels/Footer'
+import { NodeSwitcher } from '@/components/panels/NodeSwitcher'
 import { AlertsList, type AlertItem } from '@/components/panels/AlertsList'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
@@ -776,23 +777,19 @@ export function HubPage({
             flexShrink: 0,
           }}
         >
-          {/* Status + hostname */}
+          {/* Status + hostname (clickable node switcher) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <StatusDot
               status={online ? 'good' : 'bad'}
               size={10}
               pulse={online}
             />
-            <span
-              style={{
-                fontSize: 18,
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: 'var(--fg-0)',
-              }}
-            >
-              {node.name ?? 'Unnamed'}
-            </span>
+            <NodeSwitcher
+              current={node}
+              nodes={nodes}
+              records={records}
+              targetRoute="hub"
+            />
             {node.region && <SerialPlate>{node.region}</SerialPlate>}
             {node.group && <Etch>{node.group}</Etch>}
           </div>
