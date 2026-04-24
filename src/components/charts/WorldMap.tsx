@@ -199,7 +199,7 @@ export function WorldMap({ nodes, records, activeUuid, height = 220 }: Props) {
           x2="1000"
           y1="250"
           y2="250"
-          stroke="var(--edge-engrave)"
+          stroke="color-mix(in oklab, var(--fg-3) 25%, transparent)"
           strokeWidth="0.5"
           strokeDasharray="4 6"
         />
@@ -208,16 +208,20 @@ export function WorldMap({ nodes, records, activeUuid, height = 220 }: Props) {
           x2="500"
           y1="0"
           y2="500"
-          stroke="var(--edge-engrave)"
+          stroke="color-mix(in oklab, var(--fg-3) 25%, transparent)"
           strokeWidth="0.5"
           strokeDasharray="4 6"
         />
 
-        {/* Land masses */}
+        {/* Land masses — fill is a deliberate mix of fg-3 over the card
+            background so it stays visibly distinct in both light and
+            dark themes. The earlier var(--bg-2) made the map invisible
+            in mist (light) mode because bg-1 and bg-2 are nearly the
+            same warm cream. */}
         <g
-          fill="var(--bg-2)"
-          stroke="var(--edge-mid)"
-          strokeWidth="0.6"
+          fill="color-mix(in oklab, var(--fg-3) 18%, transparent)"
+          stroke="color-mix(in oklab, var(--fg-3) 45%, transparent)"
+          strokeWidth="0.8"
           strokeLinejoin="round"
         >
           {WORLD_PATHS.map((d, i) => (
