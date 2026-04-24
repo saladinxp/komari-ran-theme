@@ -27,7 +27,6 @@ import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { RadialGauge } from '@/components/charts/RadialGauge'
 import { PingChart } from '@/components/charts/PingChart'
-import { WorldMap } from '@/components/charts/WorldMap'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import {
@@ -1152,23 +1151,28 @@ export function HubPage({
                 </CardFrame>
               </div>
 
-              {/* World map — all probes plotted, current one highlighted */}
-              <CardFrame
-                title="Geographic Position"
-                code="GEO · 08"
-                action={
-                  <Etch>
-                    {node.region ?? '—'} · PREVIEW
-                  </Etch>
-                }
-              >
-                <div style={{ padding: 8 }}>
-                  <WorldMap
-                    nodes={nodes}
-                    records={records}
-                    activeUuid={node.uuid}
-                    height={220}
-                  />
+              {/* World map — disabled. The first preview pass (low-res
+                  hand-traced paths, country-centroid plotting, no zoom)
+                  was not up to standard. Keeping a placeholder card so
+                  the layout slot is reserved; component code lives in
+                  components/charts/WorldMap.tsx for the next attempt. */}
+              <CardFrame title="Geographic Position" code="GEO · 08">
+                <div
+                  style={{
+                    padding: '40px 16px',
+                    textAlign: 'center',
+                    background:
+                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
+                    minHeight: 100,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}
+                >
+                  <Etch>{node.region ?? '—'} · UNMAPPED</Etch>
+                  <Etch>WORLD MAP · COMING</Etch>
                 </div>
               </CardFrame>
             </div>
