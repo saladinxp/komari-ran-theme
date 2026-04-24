@@ -1151,29 +1151,53 @@ export function HubPage({
                 </CardFrame>
               </div>
 
-              {/* World map — disabled. The first preview pass (low-res
-                  hand-traced paths, country-centroid plotting, no zoom)
-                  was not up to standard. Keeping a placeholder card so
-                  the layout slot is reserved; component code lives in
-                  components/charts/WorldMap.tsx for the next attempt. */}
+              {/* Geographic Position — links out to the dedicated Map page.
+                  Hub's slot is too small for a real map and the first inline
+                  pass wasn't up to standard, so we redirect users to the
+                  standalone view where the map can have proper space. */}
               <CardFrame title="Geographic Position" code="GEO · 08">
-                <div
+                <a
+                  href={hashFor({ name: 'map' })}
                   style={{
-                    padding: '40px 16px',
-                    textAlign: 'center',
-                    background:
-                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
-                    minHeight: 100,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 6,
+                    gap: 8,
+                    padding: '32px 16px',
+                    minHeight: 120,
+                    background:
+                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.1s ease',
                   }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background =
+                      'repeating-linear-gradient(45deg, var(--bg-1), var(--bg-1) 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background =
+                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)'
+                  }}
+                  title="跳转到完整地图视图"
                 >
-                  <Etch>{node.region ?? '—'} · UNMAPPED</Etch>
-                  <Etch>WORLD MAP · COMING</Etch>
-                </div>
+                  <Etch>{node.region ?? '—'} · {labels.raw.find((l) => /[A-Z]{2}/.test(l.value))?.value ?? 'UNMAPPED'}</Etch>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 12,
+                      color: 'var(--accent-bright)',
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                    }}
+                  >
+                    OPEN FULL MAP →
+                  </span>
+                  <Etch>独立页面 · GEO VIEW</Etch>
+                </a>
               </CardFrame>
             </div>
 

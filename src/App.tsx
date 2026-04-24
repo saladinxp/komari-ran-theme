@@ -5,6 +5,7 @@ import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
 import { BillingPage } from '@/pages/Billing'
 import { HubPage } from '@/pages/Hub'
+import { MapPage } from '@/pages/Map'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useKomari } from '@/hooks/useKomari'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
@@ -167,6 +168,21 @@ export default function App() {
           lastUpdate={lastUpdate}
           conn={conn}
           history={globalHistory}
+          config={config}
+          hubTargetUuid={hubTargetUuid}
+        />
+      )
+
+    case 'map':
+      return (
+        <MapPage
+          nodes={displayNodes}
+          records={displayRecords}
+          theme={theme}
+          onTheme={setTheme}
+          siteName={siteName}
+          lastUpdate={lastUpdate}
+          conn={conn}
           config={config}
           hubTargetUuid={hubTargetUuid}
         />

@@ -41,7 +41,7 @@ interface Props {
 export function Sidebar({
   active,
   region = '岚 / RAN',
-  version = 'v0.9.10',
+  version = 'v0.9.11',
   hubTargetUuid,
 }: Props) {
   const nav: NavItem[] = NAV_BASE.map((item) => {
@@ -52,7 +52,7 @@ export function Sidebar({
         uuidLink: hubTargetUuid,
       }
     }
-    if (item.id === 'map' || item.id === 'alerts') {
+    if (item.id === 'alerts') {
       return { ...item, enabled: false }
     }
     return { ...item, enabled: true }
