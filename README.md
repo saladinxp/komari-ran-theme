@@ -5,6 +5,34 @@
 
 ![preview](./preview.png)
 
+## 页面预览 · Pages
+
+实站运行中:[**obsr.net**](https://obsr.net)
+
+### Overview · 概览
+
+顶部 4 大数(在线/上行/下行/累计流量)+ 节点紧凑卡网格,支持 `GRID/ROW`、`COMPACT/FULL` 切换以及按组、按状态过滤。
+
+![overview](./docs/screenshots/01-overview.png)
+
+### Nodes · 节点列表
+
+按 NAME / REGION / CPU / MEM / DISK / LOAD / NET / EXPIRE 排序;`DEFAULT` 尊重 Komari 后台拖动顺序(weight 字段)。
+
+![nodes](./docs/screenshots/02-nodes.png)
+
+### Traffic · 全网流量
+
+累计流量、上下行、实时吞吐 + 全网流量趋势(1H / 6H / 24H / 7D)+ Top Talkers 排行(`TOTAL / TX / RX / LIVE`)。
+
+![traffic](./docs/screenshots/03-traffic.png)
+
+### Billing · 订阅汇总
+
+月成本、年估算、≤30D 到期数、节点均价 + Renewal Timeline + Critical ≤7d Alerts + Cost Breakdown 饼图。支持 USD / CNY / EUR / JPY / GBP / 原始多币种切换,汇率走 [open.er-api.com](https://open.er-api.com)(5s 超时 + hardcoded fallback)。
+
+![billing](./docs/screenshots/04-billing.png)
+
 ## 设计理念
 
 灵感来自 Astell&Kern 等精密 HiFi 器材的 CNC 数控加工外观:阶梯倒角、蚀刻铭牌、凹陷显示窗、真 1px 发丝线。**每一根边线都有理由**。
@@ -25,13 +53,14 @@
 
 切换可在右上角 NIGHT/MIST 按钮,或由 Komari 主题设置默认值。
 
-## 页面
+## 路由
 
 | 路由 | 内容 |
 |---|---|
 | `#/overview` | 顶部 4 stat + 节点卡网格/行,组/状态过滤 |
-| `#/nodes` | 节点全列表,按 NAME/REGION/CPU/MEM/LOAD/EXPIRE 排序 |
+| `#/nodes` | 节点全列表,按 NAME/REGION/CPU/MEM/LOAD/NET/EXPIRE 排序 |
 | `#/nodes/{uuid}` | 单节点详情,4 chart × 1H/6H/24H/7D 时长选择 |
+| `#/hub/{uuid}` | 单节点 Hub 驾驶舱(进阶模块,响应式 3/2/1 列) |
 | `#/traffic` | 全网流量,Top Talkers,区域分布 |
 | `#/billing` | 订阅汇总,Renewal Timeline,Cost Trend·12M,By Continent |
 
