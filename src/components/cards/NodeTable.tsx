@@ -4,10 +4,20 @@ import type { KomariNode, KomariRecord } from '@/types/komari'
 import { resolveRamPercent, formatBps, daysUntil } from '@/utils/format'
 import { hashFor } from '@/router/route'
 
-export type SortKey = 'name' | 'region' | 'cpu' | 'mem' | 'disk' | 'load' | 'net' | 'expire'
+export type SortKey =
+  | 'default'
+  | 'name'
+  | 'region'
+  | 'cpu'
+  | 'mem'
+  | 'disk'
+  | 'load'
+  | 'net'
+  | 'expire'
 export type SortDir = 'asc' | 'desc'
 
 const SORT_OPTIONS: { key: SortKey; label: string; defaultDir: SortDir }[] = [
+  { key: 'default', label: 'DEFAULT', defaultDir: 'asc' },
   { key: 'name', label: 'NAME', defaultDir: 'asc' },
   { key: 'region', label: 'REGION', defaultDir: 'asc' },
   { key: 'cpu', label: 'CPU', defaultDir: 'desc' },

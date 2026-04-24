@@ -54,7 +54,7 @@ export function NodesPage({
 }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [group, setGroup] = useState<string>('ALL')
-  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortKey, setSortKey] = useState<SortKey>('default')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
   // Group options — derived from node.group field.
@@ -111,6 +111,14 @@ export function NodesPage({
 
     const dir = sortDir === 'asc' ? 1 : -1
     const cmp: Record<SortKey, (a: KomariNode, b: KomariNode) => number> = {
+      // Admin drag-order — Komari writes panel position into `weight`.
+      // Nodes without a weight float to the end and are then name-stable.
+      default: (a, b) => {
+        const aw = a.weight ?? Number.POSITIVE_INFINITY
+        const bw = b.weight ?? Number.POSITIVE_INFINITY
+        if (aw !== bw) return aw - bw
+        return (a.name ?? '').localeCompare(b.name ?? '')
+      },
       name: (a, b) => (a.name ?? '').localeCompare(b.name ?? ''),
       region: (a, b) => (a.region ?? '').localeCompare(b.region ?? ''),
       cpu: (a, b) => (records[a.uuid]?.cpu ?? 0) - (records[b.uuid]?.cpu ?? 0),
