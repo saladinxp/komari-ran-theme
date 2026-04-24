@@ -21,6 +21,7 @@ import { NodeSwitcher } from '@/components/panels/NodeSwitcher'
 import { AlertsList, type AlertItem } from '@/components/panels/AlertsList'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
+import { Segmented } from '@/components/atoms/Segmented'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { AreaChart } from '@/components/charts/AreaChart'
@@ -38,6 +39,7 @@ import {
 } from '@/utils/format'
 import { bucketLoadHistory } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
+import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { hashFor } from '@/router/route'
@@ -574,10 +576,36 @@ export function HubPage({
     return () => window.clearInterval(id)
   }, [])
 
-  // Per-node 1H history for the four charts. We keep it simple — Hub is
-  // a single-screen snapshot, no time window selector here.
-  const HOURS = 1
-  const BUCKETS = 60
+  // Per-node history for the four charts — selectable time window. Mirrors
+  // the WINDOWS spec used on NodeDetail so the same retention-aware
+  // filtering applies here too.
+  type WindowKey = '1h' | '6h' | '24h' | '7d'
+  interface WindowSpec {
+    key: WindowKey
+    label: string
+    hours: number
+    buckets: number
+  }
+  const WINDOWS: WindowSpec[] = [
+    { key: '1h', label: '1H', hours: 1, buckets: 60 },
+    { key: '6h', label: '6H', hours: 6, buckets: 72 },
+    { key: '24h', label: '24H', hours: 24, buckets: 96 },
+    { key: '7d', label: '7D', hours: 24 * 7, buckets: 84 },
+  ]
+  const [windowKey, setWindowKey] = useState<WindowKey>('1h')
+  const retentionHours = getRecordRetentionHours(config)
+  const availableWindows = useMemo(
+    () => filterWindowsByRetention(WINDOWS, retentionHours),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [retentionHours],
+  )
+  const activeWindowKey: WindowKey = availableWindows.some((w) => w.key === windowKey)
+    ? windowKey
+    : availableWindows[0].key
+  const windowSpec = WINDOWS.find((w) => w.key === activeWindowKey) ?? WINDOWS[0]
+  const HOURS = windowSpec.hours
+  const BUCKETS = windowSpec.buckets
+
   const history = useNodeHistory(uuid, HOURS)
   const node = useMemo(() => nodes.find((n) => n.uuid === uuid), [nodes, uuid])
   const record = node ? records[node.uuid] : undefined
@@ -586,7 +614,7 @@ export function HubPage({
   const windowMs = HOURS * 60 * 60 * 1000
   const buckets = useMemo(
     () => bucketLoadHistory(history.load, BUCKETS, windowMs),
-    [history.load, windowMs],
+    [history.load, BUCKETS, windowMs],
   )
   const bucketTimes = useMemo(() => {
     const start = Date.now() - windowMs
@@ -594,7 +622,7 @@ export function HubPage({
     return Array.from({ length: BUCKETS }, (_, i) =>
       Math.round(start + (i + 0.5) * bucketMs),
     )
-  }, [windowMs])
+  }, [windowMs, BUCKETS])
 
   const labels = node ? parseLabels(node.tags) : { raw: [] }
 
@@ -604,7 +632,7 @@ export function HubPage({
       hasPingData(history.ping)
         ? aggregatePingByTarget(history.ping, BUCKETS, windowMs, 6)
         : [],
-    [history.ping, windowMs],
+    [history.ping, BUCKETS, windowMs],
   )
   const pingSeries = useMemo(
     () => pingTargetsAgg.map((t) => ({ data: t.data, label: t.task.name })),
@@ -961,16 +989,34 @@ export function HubPage({
             </div>
 
             {/* ── COL 2: 4 charts (CPU / MEM / NET / LATENCY) ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+              {/* Time window selector */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 8,
+                  padding: '4px 2px',
+                }}
+              >
+                <Etch>WINDOW</Etch>
+                <Segmented
+                  size="sm"
+                  value={activeWindowKey}
+                  onChange={(v) => setWindowKey(v as WindowKey)}
+                  options={availableWindows.map((w) => ({ value: w.key, label: w.label }))}
+                />
+              </div>
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
                   gap: 14,
                 }}
               >
                 <CardFrame
-                  title="CPU · 1H"
+                  title={`CPU · ${windowSpec.label}`}
                   code="C · 04"
                   action={
                     <span
@@ -999,7 +1045,7 @@ export function HubPage({
                   </div>
                 </CardFrame>
                 <CardFrame
-                  title="Memory · 1H"
+                  title={`Memory · ${windowSpec.label}`}
                   code="C · 05"
                   action={
                     <span
@@ -1027,7 +1073,7 @@ export function HubPage({
                   </div>
                 </CardFrame>
                 <CardFrame
-                  title="Net · 1H"
+                  title={`Net · ${windowSpec.label}`}
                   code="C · 06"
                   action={
                     online ? (
@@ -1058,7 +1104,7 @@ export function HubPage({
                   </div>
                 </CardFrame>
                 <CardFrame
-                  title="Latency · 1H"
+                  title={`Latency · ${windowSpec.label}`}
                   code="C · 07"
                   action={
                     online && record?.ping != null ? (

@@ -41,7 +41,7 @@ interface Props {
 export function Sidebar({
   active,
   region = '岚 / RAN',
-  version = 'v0.9.8',
+  version = 'v0.9.9',
   hubTargetUuid,
 }: Props) {
   const nav: NavItem[] = NAV_BASE.map((item) => {
