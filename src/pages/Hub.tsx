@@ -27,6 +27,7 @@ import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { AreaChart } from '@/components/charts/AreaChart'
 import { RadialGauge } from '@/components/charts/RadialGauge'
 import { PingChart } from '@/components/charts/PingChart'
+import { WorldMap } from '@/components/charts/WorldMap'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import {
@@ -1151,27 +1152,23 @@ export function HubPage({
                 </CardFrame>
               </div>
 
-              {/* Geo placeholder — bottom of column 2 */}
-              <CardFrame title="Geographic Position" code="GEO · 08">
-                <div
-                  style={{
-                    padding: '40px 16px',
-                    textAlign: 'center',
-                    background:
-                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
-                    minHeight: 100,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    gap: 6,
-                  }}
-                >
+              {/* World map — all probes plotted, current one highlighted */}
+              <CardFrame
+                title="Geographic Position"
+                code="GEO · 08"
+                action={
                   <Etch>
-                    {node.region ?? '—'} ·{' '}
-                    {labels.raw.find((l) => /[A-Z]{2}/.test(l.value))?.value ?? 'UNMAPPED'}
+                    {node.region ?? '—'} · PREVIEW
                   </Etch>
-                  <Etch>WORLD MAP · COMING</Etch>
+                }
+              >
+                <div style={{ padding: 8 }}>
+                  <WorldMap
+                    nodes={nodes}
+                    records={records}
+                    activeUuid={node.uuid}
+                    height={220}
+                  />
                 </div>
               </CardFrame>
             </div>
