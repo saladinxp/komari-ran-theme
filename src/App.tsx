@@ -5,6 +5,7 @@ import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
 import { BillingPage } from '@/pages/Billing'
 import { HubPage } from '@/pages/Hub'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useKomari } from '@/hooks/useKomari'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
@@ -105,19 +106,21 @@ export default function App() {
         break
       }
       return (
-        <HubPage
-          uuid={target}
-          nodes={displayNodes}
-          records={displayRecords}
-          theme={theme}
-          onTheme={setTheme}
-          siteName={siteName}
-          lastUpdate={lastUpdate}
-          conn={conn}
-          config={config}
-          ping={ping}
-          hubTargetUuid={hubTargetUuid}
-        />
+        <ErrorBoundary scope="hub" resetKey={target}>
+          <HubPage
+            uuid={target}
+            nodes={displayNodes}
+            records={displayRecords}
+            theme={theme}
+            onTheme={setTheme}
+            siteName={siteName}
+            lastUpdate={lastUpdate}
+            conn={conn}
+            config={config}
+            ping={ping}
+            hubTargetUuid={hubTargetUuid}
+          />
+        </ErrorBoundary>
       )
     }
 

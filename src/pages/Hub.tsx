@@ -47,6 +47,20 @@ import { hashFor } from '@/router/route'
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 
+type WindowKey = '1h' | '6h' | '24h' | '7d'
+interface WindowSpec {
+  key: WindowKey
+  label: string
+  hours: number
+  buckets: number
+}
+const WINDOWS: WindowSpec[] = [
+  { key: '1h', label: '1H', hours: 1, buckets: 60 },
+  { key: '6h', label: '6H', hours: 6, buckets: 72 },
+  { key: '24h', label: '24H', hours: 24, buckets: 96 },
+  { key: '7d', label: '7D', hours: 24 * 7, buckets: 84 },
+]
+
 interface Props {
   uuid: string
   nodes: KomariNode[]
@@ -579,24 +593,10 @@ export function HubPage({
   // Per-node history for the four charts — selectable time window. Mirrors
   // the WINDOWS spec used on NodeDetail so the same retention-aware
   // filtering applies here too.
-  type WindowKey = '1h' | '6h' | '24h' | '7d'
-  interface WindowSpec {
-    key: WindowKey
-    label: string
-    hours: number
-    buckets: number
-  }
-  const WINDOWS: WindowSpec[] = [
-    { key: '1h', label: '1H', hours: 1, buckets: 60 },
-    { key: '6h', label: '6H', hours: 6, buckets: 72 },
-    { key: '24h', label: '24H', hours: 24, buckets: 96 },
-    { key: '7d', label: '7D', hours: 24 * 7, buckets: 84 },
-  ]
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
   const retentionHours = getRecordRetentionHours(config)
   const availableWindows = useMemo(
     () => filterWindowsByRetention(WINDOWS, retentionHours),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [retentionHours],
   )
   const activeWindowKey: WindowKey = availableWindows.some((w) => w.key === windowKey)
@@ -645,10 +645,16 @@ export function HubPage({
       number,
       { name: string; values: number[]; total: number; lost: number }
     >()
-    for (const task of history.ping.tasks) {
-      byTask.set(task.id, { name: task.name, values: [], total: 0, lost: 0 })
+    // Defensive — Komari can return null for tasks/records when a node has no
+    // ping configuration. Guard against that before iterating.
+    const tasks = Array.isArray(history.ping?.tasks) ? history.ping.tasks : []
+    const records = Array.isArray(history.ping?.records) ? history.ping.records : []
+    for (const task of tasks) {
+      if (task?.id == null) continue
+      byTask.set(task.id, { name: task.name ?? '—', values: [], total: 0, lost: 0 })
     }
-    for (const r of history.ping.records) {
+    for (const r of records) {
+      if (r?.task_id == null) continue
       const slot = byTask.get(r.task_id)
       if (!slot) continue
       slot.total += 1
