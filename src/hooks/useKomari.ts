@@ -100,7 +100,19 @@ export function useKomari(): KomariState {
     Promise.all([fetchNodes(), fetchPublic()])
       .then(([rawNodes, config]) => {
         if (cancelled) return
-        const nodes = rawNodes.map(normalizeNode).filter((n) => !n.hidden)
+        // Sort by `weight` ascending — Komari's admin drag-to-reorder writes
+        // the resulting position into this field (weight 0 = top of list).
+        // Nodes without a weight fall back to the end, then by name to keep
+        // the order stable across renders.
+        const nodes = rawNodes
+          .map(normalizeNode)
+          .filter((n) => !n.hidden)
+          .sort((a, b) => {
+            const aw = a.weight ?? Number.POSITIVE_INFINITY
+            const bw = b.weight ?? Number.POSITIVE_INFINITY
+            if (aw !== bw) return aw - bw
+            return (a.name ?? '').localeCompare(b.name ?? '')
+          })
         setState((prev) => ({ ...prev, nodes, config }))
       })
       .catch((err) => {
