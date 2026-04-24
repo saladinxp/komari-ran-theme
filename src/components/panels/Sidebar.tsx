@@ -69,7 +69,7 @@ export function Sidebar({
         minHeight: '100%',
       }}
     >
-      {/* Brand */}
+      {/* Brand — clicking takes you home */}
       <div
         style={{
           padding: '14px 16px 12px',
@@ -79,7 +79,18 @@ export function Sidebar({
           gap: 6,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <a
+          href={hashFor({ name: 'overview' })}
+          title="返回首页"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            color: 'inherit',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
           <div
             style={{
               width: 22,
@@ -103,7 +114,7 @@ export function Sidebar({
             <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em' }}>RAN</span>
             <Etch size={8}>PROBE · {version}</Etch>
           </div>
-        </div>
+        </a>
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', padding: 8, gap: 1 }}>

@@ -1,4 +1,4 @@
-import type { KomariNode, KomariPublicConfig, KomariWSPayload } from '@/types/komari'
+import type { KomariMe, KomariNode, KomariPublicConfig, KomariWSPayload } from '@/types/komari'
 
 /**
  * Resolve API base — defaults to current origin (theme served by Komari).
@@ -47,6 +47,18 @@ export async function fetchPublic(): Promise<KomariPublicConfig> {
     return await getJson<KomariPublicConfig>('/api/public')
   } catch {
     return {}
+  }
+}
+
+/** /api/me — current session info. Komari returns logged_in: false for
+ *  anonymous visitors; admins get logged_in: true plus a username. We use
+ *  this to gate visibility of hidden-flagged nodes (admins see everything,
+ *  visitors see only public nodes). */
+export async function fetchMe(): Promise<KomariMe> {
+  try {
+    return await getJson<KomariMe>('/api/me')
+  } catch {
+    return { logged_in: false }
   }
 }
 

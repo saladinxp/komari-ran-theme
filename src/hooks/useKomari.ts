@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { fetchNodes, fetchPingHistory, fetchPublic, openLiveSocket } from '@/api/client'
+import { fetchMe, fetchNodes, fetchPingHistory, fetchPublic, openLiveSocket } from '@/api/client'
 import type { PingHistory } from '@/api/client'
 import { makeOfflineRecord, normalizeNode, normalizeWsRecord } from '@/api/normalize'
 import type {
+  KomariMe,
   KomariNode,
   KomariPublicConfig,
   KomariRecord,
@@ -15,6 +16,8 @@ interface KomariState {
   nodes: KomariNode[]
   records: Record<string, KomariRecord>
   config: KomariPublicConfig
+  /** Current session — logged_in determines whether hidden nodes appear. */
+  me: KomariMe
   conn: ConnStatus
   error: string | null
   ping: PingHistory
@@ -26,6 +29,7 @@ const INITIAL: KomariState = {
   nodes: [],
   records: {},
   config: {},
+  me: { logged_in: false },
   conn: 'idle',
   error: null,
   ping: { count: 0, tasks: [], records: [] },
@@ -97,23 +101,28 @@ export function useKomari(): KomariState {
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([fetchNodes(), fetchPublic()])
-      .then(([rawNodes, config]) => {
+    Promise.all([fetchNodes(), fetchPublic(), fetchMe()])
+      .then(([rawNodes, config, me]) => {
         if (cancelled) return
         // Sort by `weight` ascending — Komari's admin drag-to-reorder writes
         // the resulting position into this field (weight 0 = top of list).
         // Nodes without a weight fall back to the end, then by name to keep
         // the order stable across renders.
+        //
+        // Hidden filter: nodes flagged hidden are visible only when the
+        // viewer is logged in (i.e. an admin reviewing their fleet).
+        // Anonymous visitors get only the public set.
+        const isLoggedIn = me.logged_in === true
         const nodes = rawNodes
           .map(normalizeNode)
-          .filter((n) => !n.hidden)
+          .filter((n) => !n.hidden || isLoggedIn)
           .sort((a, b) => {
             const aw = a.weight ?? Number.POSITIVE_INFINITY
             const bw = b.weight ?? Number.POSITIVE_INFINITY
             if (aw !== bw) return aw - bw
             return (a.name ?? '').localeCompare(b.name ?? '')
           })
-        setState((prev) => ({ ...prev, nodes, config }))
+        setState((prev) => ({ ...prev, nodes, config, me }))
       })
       .catch((err) => {
         if (cancelled) return
