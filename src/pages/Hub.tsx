@@ -1157,7 +1157,7 @@ export function HubPage({
                   standalone view where the map can have proper space. */}
               <CardFrame title="Geographic Position" code="GEO · 08">
                 <a
-                  href={hashFor({ name: 'map' })}
+                  href="./map.html"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',

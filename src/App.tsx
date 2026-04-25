@@ -5,7 +5,6 @@ import { NodeDetailPage } from '@/pages/NodeDetail'
 import { TrafficPage } from '@/pages/Traffic'
 import { BillingPage } from '@/pages/Billing'
 import { HubPage } from '@/pages/Hub'
-import { MapPage } from '@/pages/Map'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useKomari } from '@/hooks/useKomari'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
@@ -173,20 +172,15 @@ export default function App() {
         />
       )
 
-    case 'map':
-      return (
-        <MapPage
-          nodes={displayNodes}
-          records={displayRecords}
-          theme={theme}
-          onTheme={setTheme}
-          siteName={siteName}
-          lastUpdate={lastUpdate}
-          conn={conn}
-          config={config}
-          hubTargetUuid={hubTargetUuid}
-        />
-      )
+    case 'map': {
+      // The geo map now lives in a separate HTML entry (dist/map.html).
+      // If anyone hits #/map directly (legacy bookmark, manual URL, hub deep
+      // link from an older build), bounce them to the standalone page.
+      if (typeof window !== 'undefined') {
+        window.location.replace('./map.html')
+      }
+      return null
+    }
 
     case 'billing':
       return (

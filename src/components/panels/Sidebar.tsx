@@ -36,6 +36,13 @@ interface Props {
    * disables itself rather than dead-ending on an empty uuid.
    */
   hubTargetUuid?: string
+  /**
+   * When true, the sidebar is being rendered on a different HTML entry
+   * (e.g. map.html). All non-map links must point back to ./index.html#/...
+   * instead of relying on hash-only navigation, otherwise the browser would
+   * just update the hash on the current map.html page and nothing happens.
+   */
+  crossPage?: boolean
 }
 
 export function Sidebar({
@@ -43,6 +50,7 @@ export function Sidebar({
   region = '岚 / RAN',
   version = 'v0.9.11',
   hubTargetUuid,
+  crossPage = false,
 }: Props) {
   const nav: NavItem[] = NAV_BASE.map((item) => {
     if (item.id === 'hub') {
@@ -80,7 +88,7 @@ export function Sidebar({
         }}
       >
         <a
-          href={hashFor({ name: 'overview' })}
+          href={crossPage ? './index.html' : hashFor({ name: 'overview' })}
           title="返回首页"
           style={{
             display: 'flex',
@@ -126,11 +134,21 @@ export function Sidebar({
             ? { onClick: (e: React.MouseEvent) => e.preventDefault(), 'aria-disabled': true }
             : {}
 
-          // Hub uses uuid-suffixed routes; everything else just uses the name.
+          // Three cases:
+          //   1. map → always points at the standalone map.html (works the same
+          //      whether we're on index.html or map.html itself; on map.html
+          //      it's effectively a no-op refresh).
+          //   2. hub → uuid-suffixed route. On a cross-page render (map.html)
+          //      we need to prefix index.html# so the browser actually
+          //      navigates back to the main app instead of just twiddling
+          //      the hash on map.html.
+          //   3. everything else → bare name route, same cross-page logic.
           const href =
-            item.id === 'hub' && item.uuidLink
-              ? hashFor({ name: 'hub', uuid: item.uuidLink })
-              : hashFor({ name: item.id } as Route)
+            item.id === 'map'
+              ? './map.html'
+              : item.id === 'hub' && item.uuidLink
+                ? (crossPage ? './index.html' : '') + hashFor({ name: 'hub', uuid: item.uuidLink })
+                : (crossPage ? './index.html' : '') + hashFor({ name: item.id } as Route)
 
           return (
             <a
