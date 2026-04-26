@@ -22,6 +22,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { Icon } from '@/components/atoms/icons'
 import { WorldMapPro } from '@/components/charts/WorldMapPro'
 import { useKomari } from '@/hooks/useKomari'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { regionToISO } from '@/utils/region'
 import { nodeToCityLabel } from '@/utils/cities'
@@ -45,6 +46,7 @@ function loadTheme(): Theme {
 
 export default function MapApp() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
+  const drawer = useMobileDrawer()
   const { nodes, records, config, conn, lastUpdate } = useKomari()
 
   useEffect(() => {
@@ -122,9 +124,11 @@ export default function MapApp() {
     >
       <Sidebar
         active="map"
-        version="v0.9.12"
+        version="v0.9.13"
         hubTargetUuid={hubTargetUuid}
         crossPage
+        mobileOpen={drawer.open}
+        onMobileClose={drawer.onClose}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -137,6 +141,7 @@ export default function MapApp() {
           total={displayNodes.length}
           conn={conn}
           lastUpdate={lastUpdate}
+          onMobileMenu={drawer.onOpen}
         />
 
         <main

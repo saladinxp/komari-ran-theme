@@ -17,6 +17,7 @@ import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { formatBps, formatBytes } from '@/utils/format'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { hashFor } from '@/router/route'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -112,6 +113,7 @@ export function TrafficPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   const [sortBy, setSortBy] = useState<SortBy>('total')
   const [timeKey, setTimeKey] = useState<TimeKey>('1h')
 
@@ -265,7 +267,7 @@ export function TrafficPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="traffic" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="traffic" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -277,6 +279,7 @@ export function TrafficPage({
           total={nodes.length}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

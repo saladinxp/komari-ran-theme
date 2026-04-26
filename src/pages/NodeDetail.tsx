@@ -28,6 +28,7 @@ import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -104,6 +105,7 @@ export function NodeDetailPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   // Hooks must be called before any early return.
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
 
@@ -174,7 +176,7 @@ export function NodeDetailPage({
           minHeight: '100vh',
         }}
       >
-        <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
+        <Sidebar active="nodes" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
@@ -185,6 +187,7 @@ export function NodeDetailPage({
             total={0}
             lastUpdate={lastUpdate}
             conn={conn}
+                      onMobileMenu={drawer.onOpen}
           />
           <main style={{ flex: 1, padding: 20 }}>
             {stillLoading ? (
@@ -314,7 +317,7 @@ export function NodeDetailPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="nodes" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -326,6 +329,7 @@ export function NodeDetailPage({
           total={nodes.length}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

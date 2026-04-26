@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 /**
  * useMediaQuery — subscribe to a CSS media query, returns its current match state.
@@ -35,3 +35,15 @@ export function useMediaQuery(query: string): boolean {
 export const useIsMobile = () => useMediaQuery('(max-width: 767px)')
 export const useIsNarrow = () => useMediaQuery('(max-width: 479px)')
 export const useIsTablet = () => useMediaQuery('(max-width: 1023px)')
+
+/**
+ * useMobileDrawer — minimal state + handlers for the sidebar mobile drawer.
+ * Pages call this and spread the result onto Sidebar/Topbar to get the
+ * hamburger ↔ drawer wiring with two extra lines.
+ */
+export function useMobileDrawer() {
+  const [open, setOpen] = useState(false)
+  const onOpen = useCallback(() => setOpen(true), [])
+  const onClose = useCallback(() => setOpen(false), [])
+  return { open, onOpen, onClose }
+}

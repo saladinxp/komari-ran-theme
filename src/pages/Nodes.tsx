@@ -10,6 +10,7 @@ import { NodeTable, type SortKey, type SortDir } from '@/components/cards/NodeTa
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -52,6 +53,7 @@ export function NodesPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   const [filter, setFilter] = useState<Filter>('all')
   const [group, setGroup] = useState<string>('ALL')
   const [sortKey, setSortKey] = useState<SortKey>('default')
@@ -171,7 +173,7 @@ export function NodesPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="nodes" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="nodes" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -183,6 +185,7 @@ export function NodesPage({
           total={stats.total}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -14,6 +14,7 @@ import { BarChart } from '@/components/charts/BarChart'
 import { hashFor } from '@/router/route'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import { useExchangeRates } from '@/hooks/useExchangeRates'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 import {
   parseBilling,
   symbolToCode,
@@ -126,6 +127,7 @@ export function BillingPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   const [displayCode, setDisplayCode] = useState<DisplayCode>('USD')
   const { rates, fallback } = useExchangeRates()
 
@@ -262,7 +264,7 @@ export function BillingPage({
           minHeight: '100vh',
         }}
       >
-        <Sidebar active="billing" hubTargetUuid={hubTargetUuid} />
+        <Sidebar active="billing" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
@@ -273,6 +275,7 @@ export function BillingPage({
             total={nodes.length}
             lastUpdate={lastUpdate}
             conn={conn}
+                      onMobileMenu={drawer.onOpen}
           />
           <main style={{ padding: 20, flex: 1 }}>
             <CardFrame title="Billing & Renewal" code="B · 00">
@@ -310,7 +313,7 @@ export function BillingPage({
         minHeight: '100vh',
       }}
     >
-      <Sidebar active="billing" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="billing" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -322,6 +325,7 @@ export function BillingPage({
           total={nodes.length}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

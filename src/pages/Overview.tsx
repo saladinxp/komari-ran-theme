@@ -19,6 +19,7 @@ import type { PingHistory } from '@/api/client'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { formatBytes, formatBps } from '@/utils/format'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -52,6 +53,7 @@ export function OverviewPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   const [view, setView] = useState<ViewMode>('grid')
   const [filter, setFilter] = useState<Filter>('all')
   const [group, setGroup] = useState<string>('ALL')
@@ -289,7 +291,7 @@ export function OverviewPage({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <Sidebar active="overview" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="overview" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -301,6 +303,7 @@ export function OverviewPage({
           total={stats.total}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

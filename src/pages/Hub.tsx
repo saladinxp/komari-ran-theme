@@ -43,6 +43,7 @@ import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/reten
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { hashFor } from '@/router/route'
+import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -583,6 +584,7 @@ export function HubPage({
   config,
   hubTargetUuid,
 }: Props) {
+  const drawer = useMobileDrawer()
   // Live UTC clock for the command bar.
   const [now, setNow] = useState<number>(() => Date.now())
   useEffect(() => {
@@ -715,7 +717,7 @@ export function HubPage({
           minHeight: '100vh',
         }}
       >
-        <Sidebar active="hub" hubTargetUuid={hubTargetUuid} />
+        <Sidebar active="hub" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <Topbar
             title={siteName}
@@ -726,6 +728,7 @@ export function HubPage({
             total={nodes.length}
             lastUpdate={lastUpdate}
             conn={conn}
+                      onMobileMenu={drawer.onOpen}
           />
           <main style={{ padding: 24 }}>
             <CardFrame title={stillLoading ? 'Loading hub …' : 'Node not found'} code="…">
@@ -782,7 +785,7 @@ export function HubPage({
         minHeight: '100vh',
       }}
     >
-      <Sidebar active="hub" hubTargetUuid={hubTargetUuid} />
+      <Sidebar active="hub" mobileOpen={drawer.open} onMobileClose={drawer.onClose} hubTargetUuid={hubTargetUuid} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar
@@ -794,6 +797,7 @@ export function HubPage({
           total={nodes.length}
           lastUpdate={lastUpdate}
           conn={conn}
+                  onMobileMenu={drawer.onOpen}
         />
 
         {/* Command bar — hostname / uuid / state / clock. The cockpit identity strip. */}
