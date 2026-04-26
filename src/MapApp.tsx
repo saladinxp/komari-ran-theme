@@ -20,8 +20,11 @@ import { Footer } from '@/components/panels/Footer'
 import { CardFrame } from '@/components/panels/CardFrame'
 import { Etch } from '@/components/atoms/Etch'
 import { Icon } from '@/components/atoms/icons'
+import { WorldMapPro } from '@/components/charts/WorldMapPro'
 import { useKomari } from '@/hooks/useKomari'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
+import { regionToISO } from '@/utils/region'
+import { nodeToCityLabel } from '@/utils/cities'
 
 type Theme = 'ran-night' | 'ran-mist'
 
@@ -69,6 +72,22 @@ export default function MapApp() {
     () => new Set(displayNodes.map((n) => n.region).filter(Boolean)).size,
     [displayNodes],
   )
+  const cityCount = useMemo(() => {
+    const s = new Set<string>()
+    for (const n of displayNodes) {
+      const c = nodeToCityLabel(n)
+      if (c) s.add(c)
+    }
+    return s.size
+  }, [displayNodes])
+  const isoSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const n of displayNodes) {
+      const iso = regionToISO(n.region)
+      if (iso) s.add(iso)
+    }
+    return s
+  }, [displayNodes])
 
   const hubTargetUuid = useMemo(() => {
     const firstOnline = displayNodes.find((n) => displayRecords[n.uuid]?.online)
@@ -90,7 +109,7 @@ export default function MapApp() {
     >
       <Sidebar
         active="map"
-        version="v0.9.11"
+        version="v0.9.12"
         hubTargetUuid={hubTargetUuid}
         crossPage
       />
@@ -138,31 +157,185 @@ export default function MapApp() {
               </span>
             }
           >
-            {/* TODO milestone 4: render the actual map here. */}
-            <div
-              style={{
-                minHeight: 480,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 12,
-                background:
-                  'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
-                color: 'var(--fg-2)',
-              }}
-            >
-              <Etch>STANDALONE PAGE · MAP.HTML</Etch>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                MAP RENDERER · MILESTONE 4
-              </span>
-              <Etch>D3-GEO + NATURAL EARTH · INCOMING</Etch>
-            </div>
+            <WorldMapPro
+              nodes={displayNodes}
+              records={displayRecords}
+              activeUuid={hubTargetUuid}
+            />
           </CardFrame>
+
+          {/* 底部 telemetry strip + region 节点列表 */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 3fr)',
+              gap: 16,
+              minWidth: 0,
+            }}
+          >
+            <CardFrame title="Fleet Stats" code="GEO · 02">
+              <FleetStats
+                total={displayNodes.length}
+                online={onlineCount}
+                regions={regionCount}
+                cities={cityCount}
+                isoSet={isoSet}
+              />
+            </CardFrame>
+            <CardFrame title="Nodes by Region" code="GEO · 03">
+              <NodesByRegion nodes={displayNodes} records={displayRecords} />
+            </CardFrame>
+          </div>
         </main>
 
-        <Footer version="v0.9.11" config={config} />
+        <Footer version="v0.9.12" config={config} />
       </div>
+    </div>
+  )
+}
+
+// ---- 子组件 ----
+
+function FleetStats({
+  total,
+  online,
+  regions,
+  cities,
+  isoSet,
+}: {
+  total: number
+  online: number
+  regions: number
+  cities: number
+  isoSet: Set<string>
+}) {
+  const offline = total - online
+  const onlinePct = total ? Math.round((online / total) * 100) : 0
+  const items: Array<[string, string, string]> = [
+    ['NODES TOTAL', String(total), 'var(--fg-0)'],
+    ['ONLINE', `${online} · ${onlinePct}%`, 'var(--signal-good)'],
+    ['OFFLINE', String(offline), offline > 0 ? 'var(--signal-bad)' : 'var(--fg-3)'],
+    ['REGIONS', String(regions), 'var(--fg-0)'],
+    ['CITIES MAPPED', String(cities), 'var(--fg-0)'],
+    ['ISO COVERAGE', `${isoSet.size}`, 'var(--fg-0)'],
+  ]
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        gap: 0,
+        borderTop: '1px solid var(--edge-engrave)',
+      }}
+    >
+      {items.map(([label, value, color], i) => (
+        <div
+          key={label}
+          style={{
+            padding: '12px 14px',
+            borderBottom: '1px solid var(--edge-engrave)',
+            borderRight: i % 2 === 0 ? '1px solid var(--edge-engrave)' : 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}
+        >
+          <Etch>{label}</Etch>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 18,
+              fontWeight: 600,
+              color,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            {value}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function NodesByRegion({
+  nodes,
+  records,
+}: {
+  nodes: import('@/types/komari').KomariNode[]
+  records: Record<string, import('@/types/komari').KomariRecord>
+}) {
+  // 按 region (emoji flag) 聚合,统计在线/总数
+  const groups = useMemo(() => {
+    const m = new Map<string, { iso: string; online: number; total: number; nodes: typeof nodes }>()
+    for (const n of nodes) {
+      const region = n.region ?? '—'
+      const iso = regionToISO(n.region) ?? '—'
+      const g = m.get(region) ?? { iso, online: 0, total: 0, nodes: [] }
+      g.total += 1
+      if (records[n.uuid]?.online) g.online += 1
+      g.nodes.push(n)
+      m.set(region, g)
+    }
+    return Array.from(m.entries())
+      .map(([region, g]) => ({ region, ...g }))
+      .sort((a, b) => b.total - a.total)
+  }, [nodes, records])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {groups.map((g) => {
+        const pct = g.total ? (g.online / g.total) * 100 : 0
+        return (
+          <div
+            key={g.region}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '32px minmax(0, 1fr) 70px 60px',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 14px',
+              borderBottom: '1px solid var(--edge-engrave)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+            }}
+          >
+            <span style={{ fontSize: 16 }}>{g.region}</span>
+            <span style={{ color: 'var(--fg-2)', letterSpacing: '0.1em' }}>{g.iso}</span>
+            <div
+              style={{
+                height: 4,
+                background: 'var(--edge-engrave)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: `${pct}%`,
+                  background:
+                    pct >= 80
+                      ? 'var(--signal-good)'
+                      : pct >= 50
+                        ? 'var(--accent-bright)'
+                        : pct > 0
+                          ? 'var(--signal-warn)'
+                          : 'var(--signal-bad)',
+                }}
+              />
+            </div>
+            <span style={{ textAlign: 'right', color: 'var(--fg-1)' }}>
+              <span style={{ color: 'var(--signal-good)' }}>{g.online}</span>
+              <span style={{ color: 'var(--fg-3)' }}> / </span>
+              <span>{g.total}</span>
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }

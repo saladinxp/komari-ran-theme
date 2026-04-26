@@ -93,6 +93,13 @@
 
   --grid-line: rgba(255, 248, 230, 0.025);
   --grid-line-strong: rgba(255, 248, 230, 0.05);
+
+  /* Map-specific — calibrated so land/borders read clearly in both themes.
+     Don't reuse --edge-engrave (way too dark in night, too light in mist). */
+  --map-land: #1c2026;
+  --map-land-hover: #262b33;
+  --map-border: rgba(255, 248, 230, 0.22);
+  --map-graticule: rgba(255, 248, 230, 0.07);
 }
 
 /* ── ran-mist (porcelain) ─────────────────────────────────── */
@@ -139,6 +146,14 @@
 
   --grid-line: rgba(50, 40, 25, 0.04);
   --grid-line-strong: rgba(50, 40, 25, 0.08);
+
+  /* Map-specific — calibrated for the mist (light) palette.
+     Land slightly cooler/grayer than bg-2 so it doesn't blend into the
+     ocean rect; borders dark enough to read at small zoom levels. */
+  --map-land: #ece2cc;
+  --map-land-hover: #e1d4b8;
+  --map-border: rgba(50, 40, 25, 0.32);
+  --map-graticule: rgba(50, 40, 25, 0.10);
 }
 
 /* ─── Base ─── */
