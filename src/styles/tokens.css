@@ -27,6 +27,15 @@
   --tracking-mid: 0.06em;
   --tracking-tight: -0.02em;
 
+  /* Breakpoints — design contract. The matching JS hook lives in
+     src/hooks/useMediaQuery.ts; keep these two sources aligned.
+     - sm: phone portrait edge case (single-column collapse)
+     - md: phone / phablet (sidebar becomes drawer, hide subtitle)
+     - lg: tablet / small laptop (Hub 3→2 col) */
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+
   /* Geometry */
   --radius-xs: 2px;
   --radius-sm: 4px;
