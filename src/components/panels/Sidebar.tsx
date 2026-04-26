@@ -74,7 +74,13 @@ export function Sidebar({
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        minHeight: '100%',
+        // Stick to the viewport top so the sidebar stays visible while
+        // the main content scrolls underneath.
+        position: 'sticky',
+        top: 0,
+        height: '100vh',
+        alignSelf: 'flex-start',
+        overflowY: 'auto',
       }}
     >
       {/* Brand — clicking takes you home */}

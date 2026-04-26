@@ -56,6 +56,19 @@ export default function MapApp() {
     }
   }, [theme])
 
+  // Hide the `.html` suffix from the URL bar — same trick NanoMuse's
+  // nexus.html uses. The page itself is still served from /map.html;
+  // this is purely cosmetic. Skipped in file:// previews.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (window.location.protocol === 'file:') return
+    const path = window.location.pathname
+    if (path.endsWith('/map.html')) {
+      const cleaned = path.replace(/\/map\.html$/, '/map')
+      window.history.replaceState(null, '', cleaned + window.location.search + window.location.hash)
+    }
+  }, [])
+
   // 跟主 app 一致:本地 file:// 预览时降级到 mock
   const isDevPreview =
     typeof window !== 'undefined' &&
