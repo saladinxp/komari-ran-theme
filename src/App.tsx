@@ -35,6 +35,21 @@ function isCoverMode(): boolean {
   return new URLSearchParams(window.location.search).has('cover')
 }
 
+// Early bailout: if Komari SPA-served us index.html on the /map URL
+// (because the user refreshed /map, which has no real file behind it
+// after MapApp's history.replaceState), bounce immediately to map.html
+// instead of letting the main app render Overview. Runs at module load
+// so it happens before React even renders.
+if (
+  typeof window !== 'undefined' &&
+  window.location.protocol !== 'file:' &&
+  /\/map\/?$/.test(window.location.pathname)
+) {
+  window.location.replace(
+    './map.html' + window.location.search + window.location.hash,
+  )
+}
+
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
   const route = useRoute()
