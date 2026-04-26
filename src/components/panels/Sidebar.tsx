@@ -94,7 +94,7 @@ export function Sidebar({
         }}
       >
         <a
-          href={crossPage ? './index.html' : hashFor({ name: 'overview' })}
+          href={crossPage ? './' : hashFor({ name: 'overview' })}
           title="返回首页"
           style={{
             display: 'flex',
@@ -141,20 +141,22 @@ export function Sidebar({
             : {}
 
           // Three cases:
-          //   1. map → always points at the standalone map.html (works the same
-          //      whether we're on index.html or map.html itself; on map.html
-          //      it's effectively a no-op refresh).
-          //   2. hub → uuid-suffixed route. On a cross-page render (map.html)
-          //      we need to prefix index.html# so the browser actually
-          //      navigates back to the main app instead of just twiddling
-          //      the hash on map.html.
-          //   3. everything else → bare name route, same cross-page logic.
+          //   1. map → always points at ./map.html. On the map page itself
+          //      this is effectively a no-op refresh; from anywhere else
+          //      it loads the standalone geo page.
+          //   2. hub → uuid-suffixed hash route.
+          //   3. everything else → bare name hash route.
+          //
+          // On a cross-page render (i.e. the sidebar is shown on map.html),
+          // non-map links need to navigate back to the main app's HTML file.
+          // We prefix with './' (NOT './index.html') so the URL bar stays
+          // clean — server serves index.html by default for the directory.
           const href =
             item.id === 'map'
               ? './map.html'
               : item.id === 'hub' && item.uuidLink
-                ? (crossPage ? './index.html' : '') + hashFor({ name: 'hub', uuid: item.uuidLink })
-                : (crossPage ? './index.html' : '') + hashFor({ name: item.id } as Route)
+                ? (crossPage ? './' : '') + hashFor({ name: 'hub', uuid: item.uuidLink })
+                : (crossPage ? './' : '') + hashFor({ name: item.id } as Route)
 
           return (
             <a
