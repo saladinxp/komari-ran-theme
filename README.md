@@ -3,6 +3,10 @@
 > 精密金工质感的 Komari 探针面板主题
 > Precision-machined hi-fi gear, rendered as a server monitoring panel.
 
+[![version](https://img.shields.io/badge/version-1.0.0-c8a86c?style=flat-square)](https://github.com/saladinxp/komari-ran-theme/releases)
+[![demo](https://img.shields.io/badge/demo-obsr.net-2d6a4f?style=flat-square)](https://obsr.net)
+[![license](https://img.shields.io/badge/license-MIT-666?style=flat-square)](#许可)
+
 ![preview](./preview.png)
 
 ## 页面预览 · Pages
@@ -33,11 +37,17 @@
 
 ![billing](./docs/screenshots/04-billing.png)
 
-### Geo Map · 全球节点地图(v0.9.12 新增)
+### Geo Map · 全球节点地图
 
 独立 HTML 页(`map.html`,从 sidebar `Geo Map` 进入),d3-geo + natural-earth 投影,中国居中。城市级坐标(中文名匹配 80+ 常见 IDC 城市,fallback 到国家中心),节点点位颜色区分在线/离线/当前活动节点(active probe 持续脉冲)。支持拖拽平移、滚轮/按钮缩放(1-8×)、双击 reset、节点 hover tooltip、国家 hover 高亮、鼠标坐标 readout。
 
-![geomap](./docs/screenshots/05-geomap.png)
+> 截图待补。直接体验:[obsr.net/map.html](https://obsr.net/map.html)
+
+### Mobile · 移动端
+
+v1.0 起全面支持手机访问。Sidebar 在 < 768px 改为汉堡抽屉(slide-in + overlay + body scroll lock),Topbar 切换为 icon-only 紧凑模式,4 大数 stat 卡折成单列侧边布局(label/数字 + 自适应宽度 sparkline),Top Talkers 表格重排为 2 行卡片(NODE 一行 / TX·RX 一行,自动注入 ↑↓ 字符)。Geo Map 在窄屏改为说明卡片引导回桌面端(触屏拖拽与页面滑动手势冲突)。所有页面内 padding 收紧并支持 iOS `env(safe-area-inset-*)` 处理刘海与底部 home indicator。
+
+> 真机截图(iPhone Safari, obsr.net)待补。
 
 ## 设计理念
 
@@ -49,6 +59,7 @@
 - **接缝装饰(seam)** — 模拟硬件拼接缝
 - **GPU 友好的微动效** — 状态点呼吸、scan 等轻量动画,无重资源消耗
 - **`prefers-reduced-motion`** — 尊重无障碍设置
+- **真响应式** — 桌面 / 平板 / 手机三段断点,sidebar 抽屉化、HeroStats 自适应列数、Top Talkers 卡片重排、iOS safe-area
 
 ## 主题变体
 
@@ -124,10 +135,10 @@ zip -rq komari-ran-vX.Y.Z.zip komari-theme.json preview.png dist/
 
 ## 技术栈
 
-- **Vite + `vite-plugin-singlefile`** — 单文件 HTML 产物;v0.9.12 起双 entry(`index.html` + `map.html`)
+- **Vite + `vite-plugin-singlefile`** — 单文件 HTML 产物;双 entry(`index.html` + `map.html`)
 - **React 19 + TypeScript** — 30+ 模块化文件源 → 两个独立 dist HTML
 - **Hash 路由** — Komari 嵌入环境最稳的路由方式
-- **CSS 变量** — 双主题切换零 JS,`data-theme` 属性切换
+- **CSS 变量 + `@media`** — 双主题切换零 JS,`data-theme` 属性切换;响应式断点契约写在 tokens.css(`--bp-sm/md/lg`)+ `useMediaQuery` hook,二者互为单源
 - **d3-geo + topojson-client + world-atlas** — Geo Map 投影与渲染(仅地图页加载)
 
 ## 许可
