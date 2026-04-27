@@ -4,12 +4,9 @@ export type Route =
   | { name: 'overview' }
   | { name: 'nodes'; uuid?: string }
   | { name: 'hub'; uuid?: string }
-  | { name: 'ping' }
   | { name: 'traffic' }
   | { name: 'map' }
-  | { name: 'alerts' }
   | { name: 'billing' }
-  | { name: 'settings' }
   | { name: '404'; raw: string }
 
 /** Parse the hash portion of the URL into a Route. Defaults to overview. */
@@ -27,19 +24,13 @@ export function parseHash(hash: string): Route {
       return { name: 'nodes', uuid: parts[1] }
     case 'hub':
       return { name: 'hub', uuid: parts[1] }
-    case 'ping':
-      return { name: 'ping' }
     case 'traffic':
       return { name: 'traffic' }
     case 'map':
     case 'geo':
       return { name: 'map' }
-    case 'alerts':
-      return { name: 'alerts' }
     case 'billing':
       return { name: 'billing' }
-    case 'settings':
-      return { name: 'settings' }
     default:
       return { name: '404', raw: clean }
   }

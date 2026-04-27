@@ -22,7 +22,6 @@ const NAV_BASE: Omit<NavItem, 'enabled' | 'uuidLink'>[] = [
   { id: 'traffic', label: 'Traffic', icon: Icon.net },
   { id: 'billing', label: 'Billing', icon: Icon.settings },
   { id: 'map', label: 'Geo Map', icon: Icon.globe },
-  { id: 'alerts', label: 'Alerts', icon: Icon.alert },
 ]
 
 interface Props {
@@ -99,9 +98,6 @@ export function Sidebar({
         enabled: !!hubTargetUuid,
         uuidLink: hubTargetUuid,
       }
-    }
-    if (item.id === 'alerts') {
-      return { ...item, enabled: false }
     }
     return { ...item, enabled: true }
   })
