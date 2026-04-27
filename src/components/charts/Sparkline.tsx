@@ -8,10 +8,20 @@ interface Props {
   showBaseline?: boolean
   /** Stroke width */
   thickness?: number
+  /** When true, the SVG renders at 100% of its container width via viewBox.
+   *  `width` then acts only as the viewBox coordinate space (defaults still
+   *  work for desktop-fixed callers). */
+  responsive?: boolean
 }
 
 /**
  * Sparkline — minimal inline trend line. Pure SVG, no animation.
+ *
+ * Two width modes:
+ * - default: SVG renders at the literal `width` pixels (existing call sites)
+ * - responsive: SVG fills its container; `width` becomes the viewBox space
+ *   only. Use this when the parent is flex/grid and we want the line to
+ *   stretch with available width (HeroStats mobile single-col layout).
  */
 export function Sparkline({
   data,
@@ -21,10 +31,17 @@ export function Sparkline({
   fillOpacity = 0.12,
   showBaseline = false,
   thickness = 1.2,
+  responsive = false,
 }: Props) {
+  // Common SVG sizing props — responsive mode lets CSS drive the rendered
+  // pixel width while the viewBox keeps the geometry math intact.
+  const svgSize = responsive
+    ? { viewBox: `0 0 ${width} ${height}`, width: '100%', height, preserveAspectRatio: 'none' as const }
+    : { width, height }
+
   if (!data || data.length < 2) {
     return (
-      <svg width={width} height={height}>
+      <svg {...svgSize} style={{ display: 'block' }}>
         <line
           x1={0}
           x2={width}
@@ -55,7 +72,7 @@ export function Sparkline({
   const areaPath = `M0,${height} L${points.replace(/ /g, ' L')} L${width},${height} Z`
 
   return (
-    <svg width={width} height={height} style={{ display: 'block' }}>
+    <svg {...svgSize} style={{ display: 'block' }}>
       {showBaseline && (
         <>
           <line x1={0} x2={width} y1={padY} y2={padY} stroke="var(--edge-deep)" strokeWidth="1" strokeDasharray="2 3" />
