@@ -897,6 +897,7 @@ export function HubPage({
 
         <main
           ref={mainRef}
+          className="app-main"
           style={{
             padding: 16,
             display: 'flex',

@@ -282,7 +282,7 @@ export function TrafficPage({
                   onMobileMenu={drawer.onOpen}
         />
 
-        <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div
             style={{
               display: 'flex',

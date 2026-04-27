@@ -306,7 +306,7 @@ export function OverviewPage({
                   onMobileMenu={drawer.onOpen}
         />
 
-        <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <HeroStats stats={heroStats} />
 
           {/* Nodes control bar */}

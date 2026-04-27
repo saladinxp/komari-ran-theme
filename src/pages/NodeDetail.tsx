@@ -189,7 +189,7 @@ export function NodeDetailPage({
             conn={conn}
                       onMobileMenu={drawer.onOpen}
           />
-          <main style={{ flex: 1, padding: 20 }}>
+          <main className="app-main" style={{ flex: 1, padding: 20 }}>
             {stillLoading ? (
               <CardFrame title="Loading probe …" code="…">
                 <div
@@ -332,7 +332,7 @@ export function NodeDetailPage({
                   onMobileMenu={drawer.onOpen}
         />
 
-        <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Back link + status */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <a

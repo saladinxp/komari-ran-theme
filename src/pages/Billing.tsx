@@ -277,7 +277,7 @@ export function BillingPage({
             conn={conn}
                       onMobileMenu={drawer.onOpen}
           />
-          <main style={{ padding: 20, flex: 1 }}>
+          <main className="app-main" style={{ padding: 20, flex: 1 }}>
             <CardFrame title="Billing & Renewal" code="B · 00">
               <div style={{ padding: '60px 20px', textAlign: 'center' }}>
                 <Etch size={11}>NO BILLING DATA</Etch>
@@ -328,7 +328,7 @@ export function BillingPage({
                   onMobileMenu={drawer.onOpen}
         />
 
-        <main style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Currency switcher rail */}
           <div
             className="precision-card"

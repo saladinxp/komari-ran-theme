@@ -145,6 +145,7 @@ export default function MapApp() {
         />
 
         <main
+          className="app-main"
           style={{
             flex: 1,
             padding: '20px 24px 24px',
