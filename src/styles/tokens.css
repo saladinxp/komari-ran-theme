@@ -355,3 +355,35 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   Responsive — runtime CSS only. JS-driven layout uses
+   useIsMobile/Tablet hooks; this section covers cases that are
+   easier expressed declaratively (CSS-var-driven grid columns,
+   borderRight cleanup at row edges, etc.).
+   ============================================================ */
+
+/* Hub TelemetryBar: 8-cell strip → 4 cols on mobile (4×2 grid).
+   The component sets --telemetry-cols inline-default 8; we override
+   below md. nth-child rules clean up the row-edge borders so the strip
+   looks like a coherent 4×2 grid rather than two stacked 4-pieces with
+   stray vertical lines on the wrong cells. */
+@media (max-width: 767px) {
+  .hub-telemetry-bar {
+    --telemetry-cols: 4;
+  }
+  /* Cell 4 (1-indexed) now sits at the right edge of row 1, so kill its
+     borderRight even though inline style had it set. */
+  .hub-telemetry-bar .hub-telemetry-cell:nth-child(4) {
+    border-right: none !important;
+  }
+  /* Cells 5..8 are the second row; give them a top border so the row
+     break reads visually. */
+  .hub-telemetry-bar .hub-telemetry-cell:nth-child(n + 5) {
+    border-top: 1px solid var(--edge-engrave);
+  }
+  /* Slightly tighter padding so 4 cells fit a 380px viewport. */
+  .hub-telemetry-bar .hub-telemetry-cell {
+    padding: 7px 10px;
+  }
+}

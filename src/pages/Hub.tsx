@@ -527,26 +527,34 @@ function TelemetryBar({
     },
   ]
 
+  // Mobile reflow: 8-cell strip is way too dense at 380px. Drop to 4 cols
+  // on phones (auto-stacks to 4×2). The borderRight separator runs on every
+  // column except those that are visually rightmost in the current row.
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(8, 1fr)',
+        gridTemplateColumns: 'repeat(var(--telemetry-cols, 8), 1fr)',
         background: 'var(--bg-1)',
         border: '1px solid var(--edge-mid)',
         boxShadow: 'inset 0 1px 0 var(--edge-bright)',
       }}
+      className="hub-telemetry-bar"
     >
       {cells.map((c, i) => (
         <div
           key={i}
+          className="hub-telemetry-cell"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '8px 14px',
-            borderRight: i < 7 ? '1px solid var(--edge-engrave)' : 'none',
+            // borderRight is set inline for desktop; on mobile (4 cols), CSS
+            // overrides the right separator on the 4th cell of each row,
+            // and adds a borderTop to the second row to tie it visually.
             fontFamily: 'var(--font-mono)',
+            borderRight: i < 7 ? '1px solid var(--edge-engrave)' : 'none',
           }}
         >
           <span style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.18em' }}>
@@ -802,11 +810,13 @@ export function HubPage({
 
         {/* Command bar — hostname / uuid / state / clock. The cockpit identity strip. */}
         <div
+          className="hub-command-bar"
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr auto auto',
+            display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: 14,
+            flexWrap: 'wrap',
             padding: '10px 20px',
             background: 'var(--bg-1)',
             borderBottom: '1px solid var(--edge-mid)',
@@ -832,7 +842,8 @@ export function HubPage({
             {node.group && <Etch>{node.group}</Etch>}
           </div>
 
-          {/* Breadcrumb */}
+          {/* Breadcrumb — flex-1 takes the remaining space on desktop;
+              on mobile this wraps to its own row via the parent flex-wrap. */}
           <div
             style={{
               fontFamily: 'var(--font-mono)',
@@ -843,6 +854,8 @@ export function HubPage({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
+              flex: '1 1 200px',
+              minWidth: 0,
             }}
           >
             UUID · {uuid}
