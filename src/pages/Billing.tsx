@@ -386,7 +386,7 @@ export function BillingPage({
           />
 
           {/* Renewal urgency rail */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
+          <div className="billing-2col-renewal" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }}>
             <CardFrame title="Renewal Timeline" code="R · 01" action={<Etch>BY DAYS LEFT</Etch>}>
               <RenewalTimelineBody byExpiry={byExpiry} monthlyOf={monthlyOf} fmtRow={fmtRow} />
             </CardFrame>
@@ -709,7 +709,7 @@ export function BillingPage({
           </CardFrame>
 
           {/* Bottom row: 12-month committed-cost trend + continent spend */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="billing-2col-trend" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <CardFrame title="Cost Trend · 12M" code="T · 04" action={<Etch>COMMITTED</Etch>}>
               <BarChart
                 data={costTrend.map((p) => p.total)}

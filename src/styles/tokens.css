@@ -387,3 +387,90 @@ body {
     padding: 7px 10px;
   }
 }
+
+/* NodeTable grid: 420px floor breaks on phones (forces horizontal overflow).
+   Drop the floor below md so a single card fills the viewport width. */
+@media (max-width: 767px) {
+  .nodetable-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Traffic Top Talkers table: 6 fixed columns blow out on phones.
+   Mobile reflow:
+   - rank (#) and SHARE bar disappear (less critical, save horizontal space)
+   - NODE name takes the full first row
+   - REGION pill and TX/RX appear on the second row as a quick-glance strip
+   - The grid becomes a 2-row visual block per entry. */
+@media (max-width: 767px) {
+  .traffic-talkers-header {
+    /* Header: just two columns, "NODE" and "TX/RX" hint */
+    grid-template-columns: 1fr auto !important;
+    gap: 8px !important;
+  }
+  .traffic-talkers-header .traffic-col-rank,
+  .traffic-talkers-header .traffic-col-region,
+  .traffic-talkers-header .traffic-col-share {
+    display: none !important;
+  }
+  /* Header layout: header has 6 children. With grid-template-columns
+     1fr auto, the visible 3 (NODE, TX, RX) need explicit grid-column to
+     not auto-place into 4 cells. We put NODE in col 1 and merge TX+RX
+     into a single right-aligned hint via a trick: hide TX, keep RX
+     spanning the right slot. Simplest: just override via direct sibling
+     rules — children 4 (↑TX) and 5 (↓RX) keep auto-placement; children
+     1/3/6 hidden. Result: NODE + RX shown. */
+  .traffic-talkers-header > :nth-child(4) {
+    display: none !important;
+  }
+
+  /* Each row: 2-column grid where NODE spans the full width on the first
+     line and TX/RX sit on a second line. Use grid-template-areas for
+     clarity. */
+  .traffic-talkers-row {
+    grid-template-columns: 1fr auto auto !important;
+    grid-template-areas:
+      'node node node'
+      'tx tx rx' !important;
+    gap: 4px 12px !important;
+    padding: 10px 14px !important;
+  }
+  .traffic-talkers-row .traffic-col-rank,
+  .traffic-talkers-row .traffic-col-region,
+  .traffic-talkers-row .traffic-col-share {
+    display: none !important;
+  }
+  .traffic-talkers-row .traffic-col-node {
+    grid-area: node;
+  }
+  .traffic-talkers-row .traffic-col-tx {
+    grid-area: tx;
+    text-align: left !important;
+    font-size: 11px !important;
+  }
+  .traffic-talkers-row .traffic-col-rx {
+    grid-area: rx;
+    text-align: right !important;
+    font-size: 11px !important;
+  }
+  /* Add ↑/↓ glyphs to TX/RX on mobile to compensate for the missing header */
+  .traffic-talkers-row .traffic-col-tx::before {
+    content: '↑ ';
+    color: var(--fg-3);
+    font-weight: normal;
+  }
+  .traffic-talkers-row .traffic-col-rx::before {
+    content: '↓ ';
+    color: var(--fg-3);
+    font-weight: normal;
+  }
+}
+
+/* Billing: two 2-col blocks (Renewal Timeline / Critical-7 panel,
+   and CostTrend / continent spend) collapse to single column on mobile. */
+@media (max-width: 767px) {
+  .billing-2col-renewal,
+  .billing-2col-trend {
+    grid-template-columns: 1fr !important;
+  }
+}

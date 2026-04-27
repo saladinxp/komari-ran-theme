@@ -379,6 +379,7 @@ export function TrafficPage({
               <div>
                 {/* Header */}
                 <div
+                  className="traffic-talkers-header"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '32px 1fr 90px 100px 100px 1fr',
@@ -393,17 +394,18 @@ export function TrafficPage({
                     textTransform: 'uppercase',
                   }}
                 >
-                  <span>#</span>
+                  <span className="traffic-col-rank">#</span>
                   <span>NODE</span>
-                  <span>REGION</span>
+                  <span className="traffic-col-region">REGION</span>
                   <span style={{ textAlign: 'right' }}>↑ TX</span>
                   <span style={{ textAlign: 'right' }}>↓ RX</span>
-                  <span>SHARE</span>
+                  <span className="traffic-col-share">SHARE</span>
                 </div>
                 {topTalkers.map((t, i) => (
                   <a
                     key={t.node.uuid}
                     href={hashFor({ name: 'nodes', uuid: t.node.uuid })}
+                    className="traffic-talkers-row"
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '32px 1fr 90px 100px 100px 1fr',
@@ -420,6 +422,7 @@ export function TrafficPage({
                     }}
                   >
                     <span
+                      className="traffic-col-rank"
                       style={{
                         fontFamily: 'var(--font-mono)',
                         fontSize: 11,
@@ -430,6 +433,7 @@ export function TrafficPage({
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <div
+                      className="traffic-col-node"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -464,9 +468,11 @@ export function TrafficPage({
                         {t.node.name}
                       </span>
                     </div>
-                    <SerialPlate>{t.node.region ?? '—'}</SerialPlate>
+                    <span className="traffic-col-region">
+                      <SerialPlate>{t.node.region ?? '—'}</SerialPlate>
+                    </span>
                     <span
-                      className="mono tnum"
+                      className="mono tnum traffic-col-tx"
                       style={{
                         textAlign: 'right',
                         color: 'var(--accent-bright)',
@@ -476,7 +482,7 @@ export function TrafficPage({
                       {formatBytes(t.tx)}
                     </span>
                     <span
-                      className="mono tnum"
+                      className="mono tnum traffic-col-rx"
                       style={{
                         textAlign: 'right',
                         color: 'var(--signal-good)',
@@ -485,7 +491,9 @@ export function TrafficPage({
                     >
                       {formatBytes(t.rx)}
                     </span>
-                    <ShareBar tx={t.tx} rx={t.rx} max={topMax} />
+                    <span className="traffic-col-share">
+                      <ShareBar tx={t.tx} rx={t.rx} max={topMax} />
+                    </span>
                   </a>
                 ))}
               </div>

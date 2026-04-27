@@ -448,8 +448,12 @@ export function NodeTable({ nodes, records, sortKey, sortDir, onSort }: NodeTabl
     <div>
       <SortBar sortKey={sortKey} sortDir={sortDir} onSort={onSort} />
       <div
+        className="nodetable-grid"
         style={{
           display: 'grid',
+          // 420px minimum on desktop. On mobile the CSS override drops to
+          // `minmax(0, 1fr)` so a single card occupies the full viewport
+          // width without the 420 floor pushing horizontal overflow.
           gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
           gap: 8,
           marginTop: 8,
