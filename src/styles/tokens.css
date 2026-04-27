@@ -487,3 +487,11 @@ body {
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* MapApp bottom grid (Fleet Stats + Nodes by Region) collapses to single
+   column on mobile. */
+@media (max-width: 767px) {
+  .map-bottom-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

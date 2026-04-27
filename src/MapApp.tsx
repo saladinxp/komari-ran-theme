@@ -22,7 +22,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { Icon } from '@/components/atoms/icons'
 import { WorldMapPro } from '@/components/charts/WorldMapPro'
 import { useKomari } from '@/hooks/useKomari'
-import { useMobileDrawer } from '@/hooks/useMediaQuery'
+import { useIsMobile, useMobileDrawer } from '@/hooks/useMediaQuery'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { regionToISO } from '@/utils/region'
 import { nodeToCityLabel } from '@/utils/cities'
@@ -47,6 +47,7 @@ function loadTheme(): Theme {
 export default function MapApp() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
   const drawer = useMobileDrawer()
+  const isMobile = useIsMobile()
   const { nodes, records, config, conn, lastUpdate } = useKomari()
 
   useEffect(() => {
@@ -176,15 +177,107 @@ export default function MapApp() {
               </span>
             }
           >
-            <WorldMapPro
-              nodes={displayNodes}
-              records={displayRecords}
-              activeUuid={hubTargetUuid}
-            />
+            {isMobile ? (
+              // The pro map (drag pan / wheel zoom / hover tooltips / pinpoint
+              // probes) is built for a pointing device; on a touch screen the
+              // pan gesture fights the page scroll, and the dense node markers
+              // are unreadable below ~600px wide. Show a discreet placeholder
+              // and direct mobile users to the desktop view. Fleet Stats and
+              // Nodes by Region cards below still render normally so the page
+              // isn't a total dead-end.
+              <div
+                style={{
+                  padding: '48px 20px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 14,
+                  color: 'var(--fg-2)',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--accent-bright)',
+                    width: 44,
+                    height: 44,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--bg-inset)',
+                    border: '1px solid var(--edge-engrave)',
+                    borderRadius: 6,
+                    boxShadow: 'inset 0 1px 0 var(--edge-deep)',
+                  }}
+                >
+                  {Icon.globe}
+                </span>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    color: 'var(--fg-3)',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  DESKTOP RECOMMENDED
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--fg-1)',
+                    maxWidth: 280,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  地图视图针对桌面端拖拽与缩放优化。窄屏触控环境下节点密集会重叠,
+                  且滑动手势会与页面滚动冲突。建议在桌面端访问以获得完整体验。
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <a
+                    href="./"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      padding: '8px 14px',
+                      background: 'var(--bg-0)',
+                      border: '1px solid var(--edge-mid)',
+                      borderRadius: 4,
+                      color: 'var(--fg-0)',
+                      textDecoration: 'none',
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      boxShadow: 'inset 0 1px 0 var(--edge-bright)',
+                    }}
+                  >
+                    ← Back to Overview
+                  </a>
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 10,
+                    color: 'var(--fg-3)',
+                    letterSpacing: '0.14em',
+                  }}
+                >
+                  {onlineCount}/{displayNodes.length} ACTIVE · {regionCount} REGIONS · {cityCount} CITIES
+                </div>
+              </div>
+            ) : (
+              <WorldMapPro
+                nodes={displayNodes}
+                records={displayRecords}
+                activeUuid={hubTargetUuid}
+              />
+            )}
           </CardFrame>
 
           {/* 底部 telemetry strip + region 节点列表 */}
           <div
+            className="map-bottom-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 3fr)',
@@ -207,7 +300,7 @@ export default function MapApp() {
           </div>
         </main>
 
-        <Footer version="v0.9.12" config={config} />
+        <Footer version="v0.9.13" config={config} />
       </div>
     </div>
   )
