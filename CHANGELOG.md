@@ -2,6 +2,13 @@
 
 > Notable changes to 岚 (Ran) — Komari probe theme.
 
+## v1.0.1 — 2026-04
+
+Hub 卡片小修。
+
+- **Hub Geographic Position** — 之前是个跳转占位,现在通过 iframe 嵌入 `./map.html?embed=1` 显示真地图预览,整块卡片可点跳转完整地图页。`index.html` 体积零增长(地图代码仍只在 `map.html` 内)
+- **MapApp** — 新增 `embed` 模式:URL 带 `?embed=1` 时只渲染 `WorldMapPro`,无 chrome、无 padding;监听父页 `storage` 事件实现主题跨 iframe 同步
+
 ## v1.0.0 — 2026-04
 
 正式版。功能完整、数据接入完整、双主题、双 entry、移动端就绪、生产部署验证(obsr.net 17 节点稳定运行)。

@@ -3,7 +3,7 @@
 > 精密金工质感的 Komari 探针面板主题
 > Precision-machined hi-fi gear, rendered as a server monitoring panel.
 
-[![version](https://img.shields.io/badge/version-1.0.0-c8a86c?style=flat-square)](https://github.com/saladinxp/komari-ran-theme/releases)
+[![version](https://img.shields.io/badge/version-1.0.1-c8a86c?style=flat-square)](https://github.com/saladinxp/komari-ran-theme/releases)
 [![demo](https://img.shields.io/badge/demo-obsr.net-2d6a4f?style=flat-square)](https://obsr.net)
 [![license](https://img.shields.io/badge/license-MIT-666?style=flat-square)](#许可)
 

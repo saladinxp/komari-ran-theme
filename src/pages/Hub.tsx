@@ -1169,53 +1169,73 @@ export function HubPage({
                 </CardFrame>
               </div>
 
-              {/* Geographic Position — links out to the dedicated Map page.
-                  Hub's slot is too small for a real map and the first inline
-                  pass wasn't up to standard, so we redirect users to the
-                  standalone view where the map can have proper space. */}
+              {/* Geographic Position — 用 iframe 嵌入 ./map.html?embed=1
+                  这样 index.html 完全不背地图代码体积,真地图直接走外置入口。
+                  iframe 上盖一个透明 <a>,把整块卡片变成跳转入口(也防止 iframe
+                  内部 React 抢点击)。 */}
               <CardFrame title="Geographic Position" code="GEO · 08">
-                <a
-                  href="./map.html"
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    padding: '32px 16px',
-                    minHeight: 120,
-                    background:
-                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)',
-                    color: 'inherit',
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                    transition: 'background 0.1s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      'repeating-linear-gradient(45deg, var(--bg-1), var(--bg-1) 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      'repeating-linear-gradient(45deg, transparent, transparent 6px, var(--edge-engrave) 6px, var(--edge-engrave) 7px)'
-                  }}
-                  title="跳转到完整地图视图"
-                >
-                  <Etch>{node.region ?? '—'} · {labels.raw.find((l) => /[A-Z]{2}/.test(l.value))?.value ?? 'UNMAPPED'}</Etch>
-                  <span
+                <div style={{ position: 'relative' }}>
+                  <iframe
+                    src="./map.html?embed=1"
+                    title="Geographic Position Preview"
+                    loading="lazy"
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 12,
-                      color: 'var(--accent-bright)',
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      fontWeight: 600,
+                      display: 'block',
+                      width: '100%',
+                      // natural-earth viewBox 是 2:1;略微压扁(2.4:1)让卡片
+                      // 不至于太高,SVG preserveAspectRatio=meet 会自动等比
+                      // 缩放并居中,两侧/上下少量留白可以接受。
+                      aspectRatio: '2.4 / 1',
+                      maxHeight: 320,
+                      border: 'none',
+                      background: 'var(--bg-1)',
+                    }}
+                  />
+                  {/* 透明蒙层:接管所有点击 → 跳完整 map 页 */}
+                  <a
+                    href="./map.html"
+                    title="跳转到完整地图视图"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'flex-end',
+                      padding: 10,
+                      // 透明但接收点击;hover 时浮出 OPEN FULL MAP 提示
+                      cursor: 'pointer',
+                      textDecoration: 'none',
                     }}
                   >
-                    OPEN FULL MAP →
-                  </span>
-                  <Etch>独立页面 · GEO VIEW</Etch>
-                </a>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        color: 'var(--accent-bright)',
+                        letterSpacing: '0.16em',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        background: 'var(--bg-0)',
+                        border: '1px solid var(--edge-mid)',
+                        padding: '4px 8px',
+                        boxShadow: 'inset 0 1px 0 var(--edge-bright)',
+                      }}
+                    >
+                      OPEN FULL MAP →
+                    </span>
+                  </a>
+                </div>
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    borderTop: '1px solid var(--edge-engrave)',
+                  }}
+                >
+                  <Etch>
+                    {node.region ?? '—'} ·{' '}
+                    {labels.raw.find((l) => /[A-Z]{2}/.test(l.value))?.value ?? 'UNMAPPED'}
+                  </Etch>
+                </div>
               </CardFrame>
             </div>
 

@@ -50,6 +50,15 @@ export default function MapApp() {
   const isMobile = useIsMobile()
   const { nodes, records, config, conn, lastUpdate } = useKomari()
 
+  // embed 模式:被 Hub iframe 嵌入时的精简渲染。
+  // 只渲染 CardFrame + 地图本身,不画 sidebar/topbar/footer/底部 stats,
+  // 让 Hub 那个卡可以"原汁原味"显示真地图,index.html 不引入任何地图代码。
+  // 用 useState 一次性读取(URL 不会变),避免每次渲染都查 location。
+  const [embed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('embed') === '1'
+  })
+
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
     try {
@@ -59,18 +68,34 @@ export default function MapApp() {
     }
   }, [theme])
 
+  // embed 模式:监听父页 localStorage 改动 → 跟随父页主题切换。
+  // storage event 只在"其他文档同源 storage 改动"时触发(同 iframe 内
+  // 的 setItem 不会触发自己),正好用来让被嵌入的 map 跟主页主题同步。
+  useEffect(() => {
+    if (!embed) return
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== THEME_KEY) return
+      if (e.newValue === 'ran-night' || e.newValue === 'ran-mist') {
+        setTheme(e.newValue)
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [embed])
+
   // Hide the `.html` suffix from the URL bar — same trick NanoMuse's
   // nexus.html uses. The page itself is still served from /map.html;
-  // this is purely cosmetic. Skipped in file:// previews.
+  // this is purely cosmetic. Skipped in file:// previews and embed mode.
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (window.location.protocol === 'file:') return
+    if (embed) return
     const path = window.location.pathname
     if (path.endsWith('/map.html')) {
       const cleaned = path.replace(/\/map\.html$/, '/map')
       window.history.replaceState(null, '', cleaned + window.location.search + window.location.hash)
     }
-  }, [])
+  }, [embed])
 
   // 跟主 app 一致:本地 file:// 预览时降级到 mock
   const isDevPreview =
@@ -113,6 +138,48 @@ export default function MapApp() {
   const siteName = config?.site_name ?? '岚 · Komari'
   const subtitle = `${displayNodes.length} NODES · ${regionCount} REGIONS · GEO TRACKING`
 
+  // embed 模式短路:只渲染地图本体,无 sidebar/topbar/footer/底部 stats。
+  // 用于 Hub 卡片以 iframe 嵌入 ./map.html?embed=1 — 这样 index.html 体积
+  // 完全不变,但 Hub 卡片里就有真地图。
+  if (embed) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--bg-1)',
+          color: 'var(--fg-1)',
+          fontFamily: 'var(--font-sans)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 8,
+        }}
+      >
+        {isMobile ? (
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              color: 'var(--fg-3)',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              padding: '24px 12px',
+              textAlign: 'center',
+            }}
+          >
+            DESKTOP RECOMMENDED · TAP TO OPEN
+          </div>
+        ) : (
+          <WorldMapPro
+            nodes={displayNodes}
+            records={displayRecords}
+            activeUuid={hubTargetUuid}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
@@ -125,7 +192,7 @@ export default function MapApp() {
     >
       <Sidebar
         active="map"
-        version="v1.0.0"
+        version="v1.0.1"
         hubTargetUuid={hubTargetUuid}
         crossPage
         mobileOpen={drawer.open}
@@ -300,7 +367,7 @@ export default function MapApp() {
           </div>
         </main>
 
-        <Footer version="v1.0.0" config={config} />
+        <Footer version="v1.0.1" config={config} />
       </div>
     </div>
   )
