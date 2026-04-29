@@ -56,7 +56,7 @@ interface Props {
 export function Sidebar({
   active,
   region = '岚 / RAN',
-  version = 'v1.0.2',
+  version = 'v1.0.5',
   hubTargetUuid,
   crossPage = false,
   mobileOpen = false,
@@ -299,6 +299,72 @@ export function Sidebar({
         </nav>
 
         <div style={{ marginTop: 'auto', padding: 12, borderTop: '1px solid var(--edge-engrave)' }}>
+          {/* Admin entry — Komari 后台登录入口。
+              做成"铭牌按钮"风格:跟 SerialPlate 同款蚀刻工艺,
+              比之前的虚线小字醒目,但视觉权重控制在"管理员才用"的范围内。 */}
+          <a
+            href="/admin"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              padding: '8px 10px',
+              marginBottom: 12,
+              background: 'var(--bg-1)',
+              border: '1px solid var(--edge-engrave)',
+              borderRadius: 2,
+              boxShadow:
+                'inset 0 1px 0 var(--edge-bright), inset 0 -1px 0 var(--edge-deep)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'var(--fg-1)',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.15s, background 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--accent-bright)'
+              e.currentTarget.style.background = 'var(--bg-2)'
+              e.currentTarget.style.borderColor = 'var(--edge-mid)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--fg-1)'
+              e.currentTarget.style.background = 'var(--bg-1)'
+              e.currentTarget.style.borderColor = 'var(--edge-engrave)'
+            }}
+            title="Komari 后台 /admin"
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              {/* 小铭牌前缀 — 跟 OP-04A SerialPlate 视觉呼应 */}
+              <span
+                style={{
+                  fontSize: 8,
+                  color: 'var(--accent)',
+                  letterSpacing: '0.2em',
+                  fontWeight: 700,
+                }}
+              >
+                ◇
+              </span>
+              <span style={{ fontWeight: 600 }}>ADMIN · SIGN IN</span>
+            </span>
+            <span
+              style={{
+                fontSize: 11,
+                lineHeight: 1,
+                color: 'var(--fg-3)',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              →
+            </span>
+          </a>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Etch>Region · Operator</Etch>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

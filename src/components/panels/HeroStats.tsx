@@ -3,6 +3,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { Numeric } from '@/components/atoms/Numeric'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { Sparkline } from '@/components/charts/Sparkline'
+import { contentFs } from '@/utils/fontScale'
 import { useIsMobile, useIsNarrow } from '@/hooks/useMediaQuery'
 
 export interface HeroStat {
@@ -126,7 +127,7 @@ export function HeroStats({ stats }: Props) {
                 {s.delta != null && (
                   <span
                     style={{
-                      fontSize: 10,
+                      fontSize: contentFs(10),
                       fontFamily: 'var(--font-mono)',
                       color: s.delta >= 0 ? 'var(--signal-good)' : 'var(--signal-bad)',
                       display: 'inline-flex',

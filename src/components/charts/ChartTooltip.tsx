@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { contentFs } from '@/utils/fontScale'
 
 export interface TooltipPoint {
   /** SVG-coordinate x of the closest point */
@@ -165,7 +166,7 @@ export function ChartTooltipOverlay({ hover, width, height }: ChartTooltipOverla
           background: 'var(--bg-1)',
           border: '1px solid var(--edge-engrave)',
           borderRadius: 3,
-          fontSize: 11,
+          fontSize: contentFs(11),
           lineHeight: 1.4,
           fontFamily: 'var(--font-mono)',
           letterSpacing: '0.04em',
@@ -177,7 +178,7 @@ export function ChartTooltipOverlay({ hover, width, height }: ChartTooltipOverla
       >
         <div style={{ color: hover.color, fontWeight: 600 }}>{hover.valueText}</div>
         {hover.subText && (
-          <div style={{ color: 'var(--fg-3)', fontSize: 9, letterSpacing: '0.08em' }}>
+          <div style={{ color: 'var(--fg-3)', fontSize: contentFs(9), letterSpacing: '0.08em' }}>
             {hover.subText}
           </div>
         )}

@@ -26,6 +26,7 @@ import {
 import { bucketLoadHistory, hasLoadData } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
+import { contentFs } from '@/utils/fontScale'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
 import { useMobileDrawer, useIsMobile } from '@/hooks/useMediaQuery'
@@ -199,14 +200,14 @@ export function NodeDetailPage({
                     textAlign: 'center',
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--fg-3)',
-                    fontSize: 11,
+                    fontSize: contentFs(11),
                     letterSpacing: '0.16em',
                     textTransform: 'uppercase',
                   }}
                 >
                   Fetching node roster
                   <br />
-                  <span style={{ fontSize: 9, opacity: 0.7 }}>
+                  <span style={{ fontSize: contentFs(9), opacity: 0.7 }}>
                     UUID · {uuid.slice(0, 8).toUpperCase()}
                   </span>
                 </div>
@@ -218,7 +219,7 @@ export function NodeDetailPage({
                     style={{
                       fontFamily: 'var(--font-mono)',
                       color: 'var(--fg-2)',
-                      fontSize: 12,
+                      fontSize: contentFs(12),
                       letterSpacing: '0.1em',
                       marginBottom: 16,
                     }}
@@ -229,7 +230,7 @@ export function NodeDetailPage({
                     href={hashFor({ name: 'nodes' })}
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: contentFs(11),
                       color: 'var(--accent-bright)',
                       letterSpacing: '0.1em',
                     }}
@@ -340,7 +341,7 @@ export function NodeDetailPage({
               href={hashFor({ name: 'nodes' })}
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 10,
+                fontSize: contentFs(10),
                 color: 'var(--fg-2)',
                 letterSpacing: '0.14em',
                 textDecoration: 'none',
@@ -395,7 +396,7 @@ export function NodeDetailPage({
                   <Etch>{s.label}</Etch>
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: contentFs(13),
                       fontWeight: 500,
                       fontFamily: 'var(--font-mono)',
                       letterSpacing: '-0.01em',
@@ -610,7 +611,7 @@ export function NodeDetailPage({
                 title="HUB · 单节点驾驶舱视图"
                 style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
+                  fontSize: contentFs(10),
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   padding: '6px 12px',
@@ -764,7 +765,7 @@ export function NodeDetailPage({
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <StatusDot status={x.s as 'good' | 'warn' | 'info'} size={5} />
-                          <span style={{ fontSize: 11, color: 'var(--fg-1)' }}>{x.l}</span>
+                          <span style={{ fontSize: contentFs(11), color: 'var(--fg-1)' }}>{x.l}</span>
                         </div>
                         <Numeric value={x.v} size={14} />
                       </div>
@@ -863,7 +864,7 @@ export function NodeDetailPage({
                   <h3
                     style={{
                       margin: 0,
-                      fontSize: 14,
+                      fontSize: contentFs(14),
                       fontWeight: 600,
                       letterSpacing: '-0.01em',
                     }}
@@ -889,7 +890,7 @@ export function NodeDetailPage({
                       textAlign: 'center',
                       color: 'var(--fg-3)',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: contentFs(11),
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
                       lineHeight: 1.8,
@@ -899,7 +900,7 @@ export function NodeDetailPage({
                     {!history.loading && (
                       <>
                         <br />
-                        <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                        <span style={{ fontSize: contentFs(9), color: 'var(--fg-3)', opacity: 0.7 }}>
                           configure ping tasks in komari admin
                         </span>
                       </>
@@ -945,7 +946,7 @@ function ChartOrEmpty({ empty, children }: { empty: boolean; children: React.Rea
           justifyContent: 'center',
           color: 'var(--fg-3)',
           fontFamily: 'var(--font-mono)',
-          fontSize: 10,
+          fontSize: contentFs(10),
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           background: 'var(--bg-inset)',
@@ -994,7 +995,7 @@ function DualNetChart({
           gap: 10,
           alignItems: 'center',
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: contentFs(9),
           color: 'var(--fg-2)',
           letterSpacing: '0.1em',
           background: 'var(--bg-1)',
@@ -1082,7 +1083,7 @@ function PingTargetCard({
           />
           <span
             style={{
-              fontSize: 12,
+              fontSize: contentFs(12),
               fontWeight: 600,
               color: 'var(--fg-0)',
               letterSpacing: '-0.01em',
@@ -1121,7 +1122,7 @@ function PingTargetCard({
             <span
               className="mono tnum"
               style={{
-                fontSize: 14,
+                fontSize: contentFs(14),
                 fontWeight: 500,
                 color:
                   lossStatus === 'bad'

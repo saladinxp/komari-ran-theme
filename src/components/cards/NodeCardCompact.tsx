@@ -3,6 +3,7 @@ import { StatusDot } from '@/components/atoms/StatusDot'
 import { Sparkline } from '@/components/charts/Sparkline'
 import type { KomariNode, KomariRecord, NodeStatus } from '@/types/komari'
 import { formatBps, formatBytes, formatPercent, formatUptimeShort, parseLabels, daysUntil } from '@/utils/format'
+import { contentFs } from '@/utils/fontScale'
 
 interface Props {
   node: KomariNode
@@ -61,15 +62,15 @@ function MetricCell({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <Etch>{label}</Etch>
-        <span className="mono tnum" style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}>
+        <span className="mono tnum" style={{ fontSize: contentFs(12), color: 'var(--fg-0)', fontWeight: 500 }}>
           {percent != null ? Math.round(percent) : '—'}
-          <span style={{ fontSize: 9, color: 'var(--fg-2)', marginLeft: 1 }}>%</span>
+          <span style={{ fontSize: contentFs(9), color: 'var(--fg-2)', marginLeft: 1 }}>%</span>
         </span>
       </div>
       {sub && (
         <span
           style={{
-            fontSize: 10,
+            fontSize: contentFs(10),
             color: 'var(--fg-2)',
             fontFamily: 'var(--font-mono)',
             whiteSpace: 'nowrap',
@@ -126,7 +127,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
             {node.region && (
               <span
                 style={{
-                  fontSize: 9,
+                  fontSize: contentFs(9),
                   fontFamily: 'var(--font-mono)',
                   color: 'var(--accent-bright)',
                   letterSpacing: '0.12em',
@@ -137,7 +138,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
             )}
             <span
               style={{
-                fontSize: 13,
+                fontSize: contentFs(13),
                 fontWeight: 600,
                 letterSpacing: '-0.01em',
                 color: 'var(--fg-0)',
@@ -153,7 +154,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
           {(record?.os || node.os) && (
             <span
               style={{
-                fontSize: 9.5,
+                fontSize: contentFs(9.5),
                 fontFamily: 'var(--font-mono)',
                 color: 'var(--fg-3)',
                 letterSpacing: '0.04em',
@@ -214,11 +215,11 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <Etch>负载</Etch>
-            <span className="mono tnum" style={{ fontSize: 12, color: 'var(--fg-0)', fontWeight: 500 }}>
+            <span className="mono tnum" style={{ fontSize: contentFs(12), color: 'var(--fg-0)', fontWeight: 500 }}>
               {offline ? '—' : record?.load1 != null ? record.load1.toFixed(2) : '—'}
             </span>
           </div>
-          <span style={{ fontSize: 10, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
+          <span style={{ fontSize: contentFs(10), color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>
             {offline
               ? '1m / 5m / 15m'
               : `${(record?.load1 ?? 0).toFixed(2)} / ${(record?.load5 ?? 0).toFixed(2)} / ${(record?.load15 ?? 0).toFixed(2)}`}
@@ -233,8 +234,8 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>↑ 上行</span>
-            <span className="mono tnum" style={{ fontSize: 11, color: 'var(--fg-0)' }}>
+            <span style={{ fontSize: contentFs(11), color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>↑ 上行</span>
+            <span className="mono tnum" style={{ fontSize: contentFs(11), color: 'var(--fg-0)' }}>
               {formatBps(record?.network_tx)}
             </span>
           </div>
@@ -242,8 +243,8 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--signal-good)', fontFamily: 'var(--font-mono)' }}>↓ 下行</span>
-            <span className="mono tnum" style={{ fontSize: 11, color: 'var(--fg-0)' }}>
+            <span style={{ fontSize: contentFs(11), color: 'var(--signal-good)', fontFamily: 'var(--font-mono)' }}>↓ 下行</span>
+            <span className="mono tnum" style={{ fontSize: contentFs(11), color: 'var(--fg-0)' }}>
               {formatBps(record?.network_rx)}
             </span>
           </div>
@@ -258,7 +259,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       </div>
 
       {/* total traffic */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 11 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: contentFs(11) }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>出站</span>
           <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>{formatBytes(record?.network_total_up)}</span>
@@ -273,18 +274,18 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>延迟</span>
-            <span className="mono tnum" style={{ fontSize: 12, color: statusColor }}>
+            <span style={{ fontSize: contentFs(11), color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>延迟</span>
+            <span className="mono tnum" style={{ fontSize: contentFs(12), color: statusColor }}>
               {record?.ping != null ? Math.round(record.ping) : '—'}
-              <span style={{ fontSize: 9, color: 'var(--fg-2)', marginLeft: 1 }}>ms</span>
+              <span style={{ fontSize: contentFs(9), color: 'var(--fg-2)', marginLeft: 1 }}>ms</span>
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>丢包率</span>
+            <span style={{ fontSize: contentFs(11), color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>丢包率</span>
             <span
               className="mono tnum"
               style={{
-                fontSize: 12,
+                fontSize: contentFs(12),
                 color: (record?.loss ?? 0) > 1 ? 'var(--signal-warn)' : 'var(--signal-good)',
               }}
             >
@@ -298,7 +299,7 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
       <div className="seam" />
 
       {/* footer */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 11 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: contentFs(11) }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>到期</span>
           <span className="mono tnum" style={{ color: 'var(--fg-1)' }}>{days != null ? `${days} 天` : '—'}</span>

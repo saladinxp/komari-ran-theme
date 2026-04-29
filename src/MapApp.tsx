@@ -21,11 +21,14 @@ import { CardFrame } from '@/components/panels/CardFrame'
 import { Etch } from '@/components/atoms/Etch'
 import { Icon } from '@/components/atoms/icons'
 import { WorldMapPro } from '@/components/charts/WorldMapPro'
+import { VisitorFocusMap } from '@/components/charts/VisitorFocusMap'
 import { useKomari } from '@/hooks/useKomari'
 import { useIsMobile, useMobileDrawer } from '@/hooks/useMediaQuery'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { regionToISO } from '@/utils/region'
 import { nodeToCityLabel } from '@/utils/cities'
+import { applyFontScale, parseFontScale } from '@/utils/fontScale'
+import { setBpsUnitMode, parseBpsUnitMode } from '@/utils/format'
 
 type Theme = 'ran-night' | 'ran-mist'
 
@@ -50,14 +53,26 @@ export default function MapApp() {
   const isMobile = useIsMobile()
   const { nodes, records, config, conn, lastUpdate } = useKomari()
 
-  // embed 模式:被 Hub iframe 嵌入时的精简渲染。
-  // 只渲染 CardFrame + 地图本身,不画 sidebar/topbar/footer/底部 stats,
-  // 让 Hub 那个卡可以"原汁原味"显示真地图,index.html 不引入任何地图代码。
+  // embed 模式:被 iframe 嵌入时的精简渲染。
+  //   ?embed=1                 — Hub 卡片用,完整 WorldMapPro
+  //   ?embed=visitor&lat=&lon= — VisitorAlert 用,纯静态地图 + 一个高亮焦点
+  //                               不调 useKomari、不画节点,零额外开销
   // 用 useState 一次性读取(URL 不会变),避免每次渲染都查 location。
-  const [embed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return new URLSearchParams(window.location.search).get('embed') === '1'
+  const [embedConfig] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const sp = new URLSearchParams(window.location.search)
+    const v = sp.get('embed')
+    if (v === '1') return { mode: 'hub' as const }
+    if (v === 'visitor') {
+      const lat = parseFloat(sp.get('lat') ?? '')
+      const lon = parseFloat(sp.get('lon') ?? '')
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        return { mode: 'visitor' as const, lat, lon }
+      }
+    }
+    return null
   })
+  const embed = embedConfig !== null
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme)
@@ -67,6 +82,19 @@ export default function MapApp() {
       /* ignore */
     }
   }, [theme])
+
+  // 字号档位 — 跟主页面 App.tsx 同样的 theme_settings.font_scale 接入,
+  // 让 map.html 与首页字号体感一致。
+  useEffect(() => {
+    const raw = config?.theme_settings?.font_scale
+    applyFontScale(parseFontScale(raw))
+  }, [config?.theme_settings?.font_scale])
+
+  // 流量单位策略 — 同首页一致
+  useEffect(() => {
+    const raw = config?.theme_settings?.bps_unit
+    setBpsUnitMode(parseBpsUnitMode(raw))
+  }, [config?.theme_settings?.bps_unit])
 
   // embed 模式:监听父页 localStorage 改动 → 跟随父页主题切换。
   // storage event 只在"其他文档同源 storage 改动"时触发(同 iframe 内
@@ -139,8 +167,25 @@ export default function MapApp() {
   const subtitle = `${displayNodes.length} NODES · ${regionCount} REGIONS · GEO TRACKING`
 
   // embed 模式短路:只渲染地图本体,无 sidebar/topbar/footer/底部 stats。
-  // 用于 Hub 卡片以 iframe 嵌入 ./map.html?embed=1 — 这样 index.html 体积
-  // 完全不变,但 Hub 卡片里就有真地图。
+  //   - hub:   Hub 卡片用,完整 WorldMapPro
+  //   - visitor: VisitorAlert 用,纯静态轻量地图 + 单个高亮焦点
+  if (embedConfig?.mode === 'visitor') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--bg-1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 4,
+        }}
+      >
+        <VisitorFocusMap lat={embedConfig.lat} lon={embedConfig.lon} />
+      </div>
+    )
+  }
+
   if (embed) {
     return (
       <div
@@ -192,7 +237,7 @@ export default function MapApp() {
     >
       <Sidebar
         active="map"
-        version="v1.0.2"
+        version="v1.0.5"
         hubTargetUuid={hubTargetUuid}
         crossPage
         mobileOpen={drawer.open}
@@ -367,7 +412,7 @@ export default function MapApp() {
           </div>
         </main>
 
-        <Footer version="v1.0.2" config={config} />
+        <Footer version="v1.0.5" config={config} />
       </div>
     </div>
   )

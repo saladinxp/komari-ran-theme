@@ -11,6 +11,8 @@ import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { MOCK_NODES, MOCK_RECORDS } from '@/data/mock'
 import { ThemeCover } from '@/components/ThemeCover'
 import { useRoute } from '@/router/route'
+import { applyFontScale, parseFontScale } from '@/utils/fontScale'
+import { setBpsUnitMode, parseBpsUnitMode } from '@/utils/format'
 
 type Theme = 'ran-night' | 'ran-mist'
 
@@ -63,6 +65,22 @@ export default function App() {
       /* ignore */
     }
   }, [theme])
+
+  // 字号档位 — 跟随 Komari 后台 theme_settings.font_scale 实时变化。
+  // 写到 <html> 上的 CSS 变量,各组件通过 contentFs() 读取。
+  useEffect(() => {
+    const raw = config?.theme_settings?.font_scale
+    applyFontScale(parseFontScale(raw))
+  }, [config?.theme_settings?.font_scale])
+
+  // 流量单位策略 — 跟随 theme_settings.bps_unit。
+  // formatBps / compactBps 内部读取模块状态;改完触发组件 re-render
+  // 是靠 config 变化本身(useKomari 返回新 config 引用),
+  // 不需要单独发广播。
+  useEffect(() => {
+    const raw = config?.theme_settings?.bps_unit
+    setBpsUnitMode(parseBpsUnitMode(raw))
+  }, [config?.theme_settings?.bps_unit])
 
   // Cover mode — render only the theme thumbnail card.
   if (isCoverMode()) {

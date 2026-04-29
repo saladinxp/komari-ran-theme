@@ -4,6 +4,7 @@ import { StatusDot } from '@/components/atoms/StatusDot'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { CompactMetric } from '@/components/atoms/CompactMetric'
 import { Sparkline } from '@/components/charts/Sparkline'
+import { contentFs } from '@/utils/fontScale'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import {
   formatBps,
@@ -61,7 +62,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
           {node.flag && (
             <span
               style={{
-                fontSize: 9,
+                fontSize: contentFs(9),
                 fontFamily: 'var(--font-mono)',
                 color: 'var(--accent-bright)',
                 letterSpacing: '0.12em',
@@ -72,7 +73,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
           )}
           <span
             style={{
-              fontSize: 13,
+              fontSize: contentFs(13),
               fontWeight: 600,
               color: 'var(--fg-0)',
               letterSpacing: '-0.01em',
@@ -88,7 +89,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
         {(record?.os ?? node.os) && (
           <span
             style={{
-              fontSize: 10,
+              fontSize: contentFs(10),
               fontFamily: 'var(--font-mono)',
               color: 'var(--fg-3)',
               letterSpacing: '0.04em',
@@ -141,7 +142,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
         <span
           className="mono tnum"
           style={{
-            fontSize: 10,
+            fontSize: contentFs(10),
             color: 'var(--fg-1)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -158,7 +159,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
         <span
           className="mono tnum"
           style={{
-            fontSize: 10,
+            fontSize: contentFs(10),
             color: 'var(--fg-1)',
             whiteSpace: 'nowrap',
           }}
@@ -175,7 +176,7 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
           label={statusKey === 'good' ? 'ONLINE' : statusKey === 'warn' ? 'DEGR' : 'OFFLINE'}
           dense
         />
-        <span className="mono tnum" style={{ fontSize: 10, color: 'var(--fg-2)' }}>
+        <span className="mono tnum" style={{ fontSize: contentFs(10), color: 'var(--fg-2)' }}>
           UP {online ? formatUptimeShort(record?.uptime) : '—'}
         </span>
       </div>

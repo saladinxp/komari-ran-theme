@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { contentFs } from '@/utils/fontScale'
 
 interface Props {
   value: ReactNode
@@ -12,6 +13,9 @@ interface Props {
 /**
  * Numeric — tabular monospace value with optional unit suffix.
  * Unit is automatically scaled smaller (~45% of value size) and dimmed.
+ *
+ * 字号通过 contentFs() 接入 `--font-scale-content`,后台开关
+ * (theme_settings.font_scale) 一改全站数字一起缩放。
  */
 export function Numeric({
   value,
@@ -25,7 +29,7 @@ export function Numeric({
     <span
       style={{
         fontFamily: 'var(--font-mono)',
-        fontSize: size,
+        fontSize: contentFs(size),
         fontWeight: weight,
         color,
         fontVariantNumeric: 'tabular-nums',
@@ -39,7 +43,7 @@ export function Numeric({
       {unit && (
         <span
           style={{
-            fontSize: size * 0.45,
+            fontSize: contentFs(size * 0.45),
             color: unitColor,
             fontWeight: 400,
             letterSpacing: '0.06em',

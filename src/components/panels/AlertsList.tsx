@@ -2,6 +2,7 @@ import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { Icon } from '@/components/atoms/icons'
+import { contentFs } from '@/utils/fontScale'
 
 export interface AlertItem {
   code: string
@@ -32,7 +33,7 @@ export function AlertsList({ alerts }: Props) {
           textAlign: 'center',
           color: 'var(--fg-3)',
           fontFamily: 'var(--font-mono)',
-          fontSize: 11,
+          fontSize: contentFs(11),
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
         }}
@@ -60,7 +61,7 @@ function AlertRow({ alert, last }: { alert: AlertItem; last: boolean }) {
         padding: '8px 12px',
         borderBottom: last ? 'none' : '1px solid var(--edge-engrave)',
         gap: 10,
-        fontSize: 11,
+        fontSize: contentFs(11),
         minWidth: 0,
       }}
     >
@@ -83,7 +84,7 @@ function AlertRow({ alert, last }: { alert: AlertItem; last: boolean }) {
       <span
         className="mono tnum"
         style={{
-          fontSize: 10,
+          fontSize: contentFs(10),
           color: 'var(--fg-2)',
           letterSpacing: '0.06em',
           whiteSpace: 'nowrap',

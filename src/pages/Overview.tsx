@@ -13,12 +13,14 @@ import { Numeric } from '@/components/atoms/Numeric'
 import { PingChart } from '@/components/charts/PingChart'
 import { BarChart } from '@/components/charts/BarChart'
 import { Footer } from '@/components/panels/Footer'
+import { VisitorAlert } from '@/components/panels/VisitorAlert'
 import { hashFor } from '@/router/route'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { formatBytes, formatBps } from '@/utils/format'
+import { contentFs } from '@/utils/fontScale'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -323,7 +325,7 @@ export function OverviewPage({
               <h3
                 style={{
                   margin: 0,
-                  fontSize: 14,
+                  fontSize: contentFs(14),
                   fontWeight: 600,
                   letterSpacing: '-0.01em',
                   color: 'var(--fg-0)',
@@ -387,7 +389,7 @@ export function OverviewPage({
                 textAlign: 'center',
                 color: 'var(--fg-2)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: 12,
+                fontSize: contentFs(12),
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 background: 'var(--bg-inset)',
@@ -480,7 +482,7 @@ export function OverviewPage({
                     textAlign: 'center',
                     color: 'var(--fg-3)',
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
+                    fontSize: contentFs(11),
                     letterSpacing: '0.14em',
                     textTransform: 'uppercase',
                     lineHeight: 1.6,
@@ -488,7 +490,7 @@ export function OverviewPage({
                 >
                   尚未配置测速点
                   <br />
-                  <span style={{ fontSize: 9, color: 'var(--fg-3)', opacity: 0.7 }}>
+                  <span style={{ fontSize: contentFs(9), color: 'var(--fg-3)', opacity: 0.7 }}>
                     add ping tasks in komari admin
                   </span>
                 </div>
@@ -540,6 +542,16 @@ export function OverviewPage({
 
         <Footer config={config} />
       </div>
+
+      {/* 访客信息浮卡 — 仅 Overview 页且后台 visitor_alert 开启时挂载;
+          内部根据 sessionStorage 决定本会话是否实际渲染。
+          切到其他页时 Overview 卸载,VisitorAlert 也跟着卸载,
+          组件 unmount 时会写入 session 标记,本会话不再弹。 */}
+      <VisitorAlert
+        enabled={
+          (config?.theme_settings?.visitor_alert as string | undefined) !== 'off'
+        }
+      />
     </div>
   )
 }

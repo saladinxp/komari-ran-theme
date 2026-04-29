@@ -39,6 +39,7 @@ import {
 } from '@/utils/format'
 import { bucketLoadHistory } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
+import { contentFs } from '@/utils/fontScale'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { useElementWidth } from '@/hooks/useElementWidth'
@@ -218,7 +219,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
         padding: '4px 0',
         borderBottom: '1px dashed var(--edge-engrave)',
         fontFamily: 'var(--font-mono)',
-        fontSize: 10.5,
+        fontSize: contentFs(10.5),
       }}
     >
       <span
@@ -226,7 +227,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
           color: 'var(--fg-3)',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          fontSize: 9,
+          fontSize: contentFs(9),
         }}
       >
         {label}
@@ -275,7 +276,7 @@ function AllocationBar({
       >
         <span
           style={{
-            fontSize: 9,
+            fontSize: contentFs(9),
             color: 'var(--fg-3)',
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
@@ -283,7 +284,7 @@ function AllocationBar({
         >
           {label}
         </span>
-        <span style={{ fontSize: 10, color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: contentFs(10), color: 'var(--fg-1)', fontVariantNumeric: 'tabular-nums' }}>
           {used != null && total != null && total > 0
             ? `${formatFn(used)} / ${formatFn(total)}`
             : '—'}
@@ -356,7 +357,7 @@ function HeartbeatStrip({ cells }: { cells: HeartbeatCell[] }) {
           justifyContent: 'space-between',
           marginTop: 6,
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: contentFs(9),
           color: 'var(--fg-3)',
           letterSpacing: '0.16em',
         }}
@@ -383,7 +384,7 @@ function TargetLatencyList({
           textAlign: 'center',
           color: 'var(--fg-3)',
           fontFamily: 'var(--font-mono)',
-          fontSize: 10,
+          fontSize: contentFs(10),
           letterSpacing: '0.16em',
         }}
       >
@@ -417,7 +418,7 @@ function TargetLatencyList({
           >
             <span
               style={{
-                fontSize: 10,
+                fontSize: contentFs(10),
                 color: 'var(--fg-2)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -449,7 +450,7 @@ function TargetLatencyList({
             </div>
             <span
               style={{
-                fontSize: 10,
+                fontSize: contentFs(10),
                 color: c,
                 fontWeight: 600,
                 textAlign: 'right',
@@ -557,12 +558,12 @@ function TelemetryBar({
             borderRight: i < 7 ? '1px solid var(--edge-engrave)' : 'none',
           }}
         >
-          <span style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.18em' }}>
+          <span style={{ fontSize: contentFs(9), color: 'var(--fg-3)', letterSpacing: '0.18em' }}>
             {c.label}
           </span>
           <span
             style={{
-              fontSize: 13,
+              fontSize: contentFs(13),
               color: c.color,
               fontWeight: 600,
               fontVariantNumeric: 'tabular-nums',
@@ -847,7 +848,7 @@ export function HubPage({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 10,
+              fontSize: contentFs(10),
               color: 'var(--fg-3)',
               letterSpacing: '0.15em',
               textTransform: 'uppercase',
@@ -865,7 +866,7 @@ export function HubPage({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontSize: contentFs(11),
               color: 'var(--accent-bright)',
               letterSpacing: '0.15em',
               fontVariantNumeric: 'tabular-nums',
@@ -880,7 +881,7 @@ export function HubPage({
             title="返回标准详情"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 10,
+              fontSize: contentFs(10),
               padding: '6px 12px',
               background: 'var(--bg-0)',
               color: 'var(--fg-2)',
@@ -1046,7 +1047,7 @@ export function HubPage({
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: contentFs(11),
                         color:
                           (record?.cpu ?? 0) > 80 ? 'var(--signal-warn)' : 'var(--accent-bright)',
                         fontWeight: 600,
@@ -1075,7 +1076,7 @@ export function HubPage({
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: contentFs(11),
                         color: memPct > 80 ? 'var(--signal-warn)' : 'var(--accent-bright)',
                         fontWeight: 600,
                         fontVariantNumeric: 'tabular-nums',
@@ -1104,7 +1105,7 @@ export function HubPage({
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 10,
+                          fontSize: contentFs(10),
                           color: 'var(--accent-bright)',
                           fontWeight: 600,
                           fontVariantNumeric: 'tabular-nums',
@@ -1135,7 +1136,7 @@ export function HubPage({
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 11,
+                          fontSize: contentFs(11),
                           color: 'var(--accent-bright)',
                           fontWeight: 600,
                           fontVariantNumeric: 'tabular-nums',
@@ -1158,7 +1159,7 @@ export function HubPage({
                           justifyContent: 'center',
                           color: 'var(--fg-3)',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 10,
+                          fontSize: contentFs(10),
                           letterSpacing: '0.16em',
                         }}
                       >
@@ -1210,7 +1211,7 @@ export function HubPage({
                     <span
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 10,
+                        fontSize: contentFs(10),
                         color: 'var(--accent-bright)',
                         letterSpacing: '0.16em',
                         textTransform: 'uppercase',

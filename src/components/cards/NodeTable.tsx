@@ -1,8 +1,9 @@
 import { Etch } from '@/components/atoms/Etch'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import type { KomariNode, KomariRecord } from '@/types/komari'
-import { resolveRamPercent, formatBps, daysUntil } from '@/utils/format'
+import { resolveRamPercent, formatBps, compactBps, daysUntil } from '@/utils/format'
 import { hashFor } from '@/router/route'
+import { contentFs } from '@/utils/fontScale'
 
 export type SortKey =
   | 'default'
@@ -62,21 +63,7 @@ function shortUptime(uptimeSec?: number): string {
   return `${m}m`
 }
 
-/** Compact bandwidth — strips fractional zero, returns "1.2K" "892" "3.4M" style. */
-function compactBps(bps: number): string {
-  if (!Number.isFinite(bps) || bps <= 0) return '0'
-  if (bps < 1000) return `${Math.round(bps)}`
-  if (bps < 1_000_000) {
-    const v = bps / 1000
-    return v >= 100 ? `${Math.round(v)}K` : `${v.toFixed(1).replace(/\.0$/, '')}K`
-  }
-  if (bps < 1_000_000_000) {
-    const v = bps / 1_000_000
-    return v >= 100 ? `${Math.round(v)}M` : `${v.toFixed(1).replace(/\.0$/, '')}M`
-  }
-  const v = bps / 1_000_000_000
-  return `${v.toFixed(1).replace(/\.0$/, '')}G`
-}
+/** Compact bandwidth — 已抽到 utils/format.ts 共享,跟随 bps_unit 模式 */
 
 function pctColor(pct: number): string {
   if (pct >= 85) return 'var(--signal-bad)'
@@ -139,7 +126,7 @@ function MiniBar({
       </div>
       <span
         style={{
-          fontSize: 10,
+          fontSize: contentFs(10),
           color: online ? 'var(--fg-1)' : 'var(--fg-3)',
           fontVariantNumeric: 'tabular-nums',
           minWidth: 28,
@@ -249,7 +236,7 @@ function NodeCardSlim({ node, record }: NodeCardSlimProps) {
               <span
                 style={{
                   fontFamily: 'var(--font-sans)',
-                  fontSize: 13,
+                  fontSize: contentFs(13),
                   fontWeight: 600,
                   color: 'var(--fg-0)',
                   letterSpacing: '-0.01em',
@@ -295,7 +282,7 @@ function NodeCardSlim({ node, record }: NodeCardSlimProps) {
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 9.5,
+                fontSize: contentFs(9.5),
                 color: 'var(--fg-3)',
                 letterSpacing: '0.05em',
                 overflow: 'hidden',
@@ -325,7 +312,7 @@ function NodeCardSlim({ node, record }: NodeCardSlimProps) {
             fontFamily: 'var(--font-mono)',
           }}
         >
-          <div style={{ display: 'flex', gap: 6, fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ display: 'flex', gap: 6, fontSize: contentFs(10), fontVariantNumeric: 'tabular-nums' }}>
             {online ? (
               <>
                 <span style={{ color: 'var(--signal-good)' }}>
@@ -339,7 +326,7 @@ function NodeCardSlim({ node, record }: NodeCardSlimProps) {
               <span style={{ color: 'var(--fg-3)' }}>OFFLINE</span>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 6, fontSize: 9, color: 'var(--fg-3)' }}>
+          <div style={{ display: 'flex', gap: 6, fontSize: contentFs(9), color: 'var(--fg-3)' }}>
             {online && (
               <span title="uptime" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 UP {shortUptime(record?.uptime)}
@@ -406,7 +393,7 @@ function SortBar({ sortKey, sortDir, onSort }: SortBarProps) {
             onClick={() => onSort(opt.key)}
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: contentFs(9),
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
               padding: '4px 8px',

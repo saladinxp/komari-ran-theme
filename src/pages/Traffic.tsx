@@ -16,6 +16,7 @@ import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { useGlobalHistory } from '@/hooks/useGlobalHistory'
 import { formatBps, formatBytes } from '@/utils/format'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
+import { contentFs } from '@/utils/fontScale'
 import { hashFor } from '@/router/route'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
@@ -296,7 +297,7 @@ export function TrafficPage({
               <h2
                 style={{
                   margin: 0,
-                  fontSize: 20,
+                  fontSize: contentFs(20),
                   fontWeight: 600,
                   letterSpacing: '-0.02em',
                   color: 'var(--fg-0)',
@@ -368,7 +369,7 @@ export function TrafficPage({
                   textAlign: 'center',
                   color: 'var(--fg-3)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
+                  fontSize: contentFs(11),
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                 }}
@@ -387,7 +388,7 @@ export function TrafficPage({
                     padding: '8px 14px',
                     borderBottom: '1px solid var(--edge-engrave)',
                     background: 'var(--bg-1)',
-                    fontSize: 9,
+                    fontSize: contentFs(9),
                     fontFamily: 'var(--font-mono)',
                     color: 'var(--fg-3)',
                     letterSpacing: '0.14em',
@@ -418,14 +419,14 @@ export function TrafficPage({
                       alignItems: 'center',
                       textDecoration: 'none',
                       color: 'inherit',
-                      fontSize: 12,
+                      fontSize: contentFs(12),
                     }}
                   >
                     <span
                       className="traffic-col-rank"
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: contentFs(11),
                         color: 'var(--fg-3)',
                         letterSpacing: '0.1em',
                       }}
@@ -455,7 +456,7 @@ export function TrafficPage({
                         {t.node.flag && (
                           <span
                             style={{
-                              fontSize: 9,
+                              fontSize: contentFs(9),
                               fontFamily: 'var(--font-mono)',
                               color: 'var(--accent-bright)',
                               letterSpacing: '0.12em',
@@ -476,7 +477,7 @@ export function TrafficPage({
                       style={{
                         textAlign: 'right',
                         color: 'var(--accent-bright)',
-                        fontSize: 12,
+                        fontSize: contentFs(12),
                       }}
                     >
                       {formatBytes(t.tx)}
@@ -486,7 +487,7 @@ export function TrafficPage({
                       style={{
                         textAlign: 'right',
                         color: 'var(--signal-good)',
-                        fontSize: 12,
+                        fontSize: contentFs(12),
                       }}
                     >
                       {formatBytes(t.rx)}

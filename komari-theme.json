@@ -2,7 +2,7 @@
   "name": "Ran · 岚",
   "short": "ran",
   "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "author": "Miuler",
   "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
@@ -23,10 +23,34 @@
         "help": "页面首次加载时的默认主题。ran-night = 墨石(深色),ran-mist = 雾色(浅色)。用户切换后浏览器会记住偏好。"
       },
       {
+        "key": "font_scale",
+        "name": "[ SIZE ] 字体大小",
+        "type": "select",
+        "options": "standard,large,xlarge",
+        "default": "standard",
+        "help": "调整页面内容文字大小。standard = 标准(默认),large = 大(约 +18%),xlarge = 超大(约 +36%)。仅缩放数字和正文,不改变布局尺寸。"
+      },
+      {
+        "key": "visitor_alert",
+        "name": "[ HUD ] 访客信息浮卡",
+        "type": "select",
+        "options": "on,off",
+        "default": "on",
+        "help": "首页右下角访客 IP / 地区 / 运营商 / 链路状态浮卡。on = 显示(默认),off = 关闭。每会话只弹一次,关闭浏览器后下次访问会再次出现;切到其它页面后再返回首页不会重复弹出。"
+      },
+      {
+        "key": "bps_unit",
+        "name": "[ NET ] 流量单位策略",
+        "type": "select",
+        "options": "auto,min-kb,lock-kb",
+        "default": "auto",
+        "help": "节点流量数字的单位显示方式。auto = 自适应 B/KB/MB/GB(默认,最精确);min-kb = 下限锁 KB(< 1KB 显示 0 KB/s,抹掉空闲服务器的 B 级别抖动);lock-kb = 全程锁 KB/s(数字大就大,跨档不变化)。"
+      },
+      {
         "key": "version_tag",
         "name": "[ SYS.VER ] 版本号",
         "type": "string",
-        "default": "v1.0.2",
+        "default": "v1.0.5",
         "help": "页脚显示的版本标识"
       },
       {

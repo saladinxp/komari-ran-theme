@@ -3,6 +3,7 @@ import type { KomariNode, KomariRecord } from '@/types/komari'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { Etch } from '@/components/atoms/Etch'
 import { hashFor, type Route } from '@/router/route'
+import { contentFs } from '@/utils/fontScale'
 
 interface Props {
   /** Currently-displayed node — its name is the dropdown trigger label. */
@@ -100,7 +101,7 @@ export function NodeSwitcher({
           borderColor: open ? 'var(--edge-mid)' : 'transparent',
           borderRadius: 4,
           fontFamily: 'var(--font-sans)',
-          fontSize: 18,
+          fontSize: contentFs(18),
           fontWeight: 600,
           letterSpacing: '-0.02em',
           cursor: 'pointer',
@@ -118,7 +119,7 @@ export function NodeSwitcher({
         <span
           aria-hidden
           style={{
-            fontSize: 9,
+            fontSize: contentFs(9),
             color: 'var(--fg-3)',
             fontFamily: 'var(--font-mono)',
             letterSpacing: 0,
@@ -170,7 +171,7 @@ export function NodeSwitcher({
                 color: 'var(--fg-0)',
                 border: '1px solid var(--edge-engrave)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                fontSize: contentFs(11),
                 letterSpacing: '0.05em',
                 outline: 'none',
               }}
@@ -192,7 +193,7 @@ export function NodeSwitcher({
                   textAlign: 'center',
                   color: 'var(--fg-3)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
+                  fontSize: contentFs(10),
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
                 }}
@@ -247,7 +248,7 @@ export function NodeSwitcher({
                       <div
                         style={{
                           fontFamily: 'var(--font-sans)',
-                          fontSize: 12,
+                          fontSize: contentFs(12),
                           fontWeight: isCurrent ? 600 : 500,
                           color: isCurrent ? 'var(--accent-bright)' : 'var(--fg-0)',
                           overflow: 'hidden',
@@ -267,7 +268,7 @@ export function NodeSwitcher({
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 9,
+                          fontSize: contentFs(9),
                           color: 'var(--accent-bright)',
                           letterSpacing: '0.18em',
                         }}

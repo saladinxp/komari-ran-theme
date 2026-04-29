@@ -82,9 +82,10 @@ export function parseBilling(node: KomariNode): ParsedBilling | null {
 }
 
 /**
- * Symbol → ISO code. ¥ is ambiguous (CNY vs JPY); resolution is left to the
- * caller via heuristic (small price → CNY, large → JPY) since we don't know
- * here which one a given node intends.
+ * Symbol → ISO code. ¥ / ￥ resolves to CNY:中文区机器实际上几乎全部
+ * 用 ¥ 标人民币(几百到上千很常见),日元标价的 VPS 圈基本不用 ¥,
+ * 之前的"金额 > 100 当 JPY"启发式会把多数 CNY 误判成日元,弊大于利。
+ * 真要标日元就让 Komari 后台直接配 'JPY' / '円' / 'JP¥' 等明确符号。
  */
 export const SYMBOL_TO_CODE: Record<string, string> = {
   '$': 'USD',
@@ -105,15 +106,12 @@ export const SYMBOL_TO_CODE: Record<string, string> = {
 }
 
 /**
- * Resolve a node's currency symbol to a 3-letter ISO code, with the ¥ heuristic.
+ * Resolve a node's currency symbol to a 3-letter ISO code.
  * Falls back to USD for unknown symbols.
+ * (amount 形参保留:旧调用方还在传,删起来跨多文件;无副作用。)
  */
-export function symbolToCode(symbol: string, amount = 0): string {
+export function symbolToCode(symbol: string, _amount = 0): string {
   if (!symbol) return 'USD'
-  // ¥ heuristic: anything > 100/month is more likely JPY than CNY
-  if (symbol === '¥' || symbol === '￥') {
-    return amount > 100 ? 'JPY' : 'CNY'
-  }
   return SYMBOL_TO_CODE[symbol] || 'USD'
 }
 
@@ -140,7 +138,6 @@ const SYMBOL_FOR_CODE: Record<string, string> = {
   CNY: '¥',
   EUR: '€',
   GBP: '£',
-  JPY: '¥',
   KRW: '₩',
   HKD: 'HK$',
   TWD: 'NT$',
@@ -159,8 +156,8 @@ export function symbolFor(code: string): string {
 export function fmtMoney(amount: number, code: string): string {
   if (!Number.isFinite(amount)) return '—'
   const sym = symbolFor(code)
-  // JPY/KRW have no decimals
-  if (code === 'JPY' || code === 'KRW') {
+  // KRW has no decimals
+  if (code === 'KRW') {
     return `${sym}${Math.round(amount).toLocaleString('en-US')}`
   }
   // Whole numbers stay whole

@@ -5,6 +5,32 @@
 
 const PLACEHOLDER = '—'
 
+/**
+ * 流量单位策略 — 由后台 theme_settings.bps_unit 控制:
+ *   - 'auto'    完全自适应 B/KB/MB/GB(默认,最精确但 B↔KB 临界值会闪)
+ *   - 'min-kb'  下限锁 KB(< 1 KB 显示 0 KB/s),抹掉 B 级别抖动
+ *   - 'lock-kb' 全程锁 KB/s,数字大就大,跨档不变化
+ *
+ * App / MapApp 在 useEffect 里通过 setBpsUnitMode 设置;
+ * formatBps / compactBps 内部按当前 mode 决定切换规则。
+ */
+export type BpsUnitMode = 'auto' | 'min-kb' | 'lock-kb'
+
+let currentBpsMode: BpsUnitMode = 'auto'
+
+export function setBpsUnitMode(mode: BpsUnitMode): void {
+  currentBpsMode = mode
+}
+
+export function getBpsUnitMode(): BpsUnitMode {
+  return currentBpsMode
+}
+
+export function parseBpsUnitMode(v: unknown): BpsUnitMode {
+  if (v === 'min-kb' || v === 'lock-kb') return v
+  return 'auto'
+}
+
 export function formatBytes(bytes?: number, digits = 1): string {
   if (bytes == null || !Number.isFinite(bytes)) return PLACEHOLDER
   if (bytes === 0) return '0 B'
@@ -16,7 +42,54 @@ export function formatBytes(bytes?: number, digits = 1): string {
 
 export function formatBps(bps?: number): string {
   if (bps == null || !Number.isFinite(bps)) return PLACEHOLDER
+  if (bps === 0) return '0 B/s'
+
+  if (currentBpsMode === 'lock-kb') {
+    // 全程锁 KB/s,即便几百 MB/s 也显示成 350000 KB/s
+    const kb = bps / 1024
+    const digits = kb >= 100 ? 0 : 1
+    return `${kb.toFixed(digits)} KB/s`
+  }
+
+  if (currentBpsMode === 'min-kb' && bps < 1024) {
+    // < 1 KB 一律 "0 KB/s",抹平 B 级别抖动
+    return '0 KB/s'
+  }
+
+  // auto / min-kb (>= 1KB) — 自适应
   return `${formatBytes(bps)}/s`
+}
+
+/**
+ * Compact bandwidth — short form (e.g. "1.2K", "892", "3.4M").
+ * 用在 NodeTable / Hub 等横向密集列表里。
+ * 跟随同一个 bps_unit mode。
+ */
+export function compactBps(bps?: number): string {
+  if (bps == null || !Number.isFinite(bps) || bps <= 0) return '0'
+
+  if (currentBpsMode === 'lock-kb') {
+    const v = bps / 1000
+    if (v < 0.1) return '0K'
+    if (v >= 100) return `${Math.round(v)}K`
+    return `${v.toFixed(1).replace(/\.0$/, '')}K`
+  }
+
+  if (currentBpsMode === 'min-kb' && bps < 1000) {
+    return '0K'
+  }
+
+  if (bps < 1000) return `${Math.round(bps)}`
+  if (bps < 1_000_000) {
+    const v = bps / 1000
+    return v >= 100 ? `${Math.round(v)}K` : `${v.toFixed(1).replace(/\.0$/, '')}K`
+  }
+  if (bps < 1_000_000_000) {
+    const v = bps / 1_000_000
+    return v >= 100 ? `${Math.round(v)}M` : `${v.toFixed(1).replace(/\.0$/, '')}M`
+  }
+  const v = bps / 1_000_000_000
+  return `${v.toFixed(1).replace(/\.0$/, '')}G`
 }
 
 export function formatPercent(v?: number, digits = 1): string {

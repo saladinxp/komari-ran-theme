@@ -24,10 +24,11 @@ import {
   reconstructMonthlyCosts,
   type ParsedBilling,
 } from '@/utils/billing'
+import { contentFs } from '@/utils/fontScale'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
-type DisplayCode = 'USD' | 'CNY' | 'EUR' | 'JPY' | 'GBP' | 'NATIVE'
+type DisplayCode = 'USD' | 'CNY' | 'EUR' | 'GBP' | 'NATIVE'
 
 interface Props {
   nodes: KomariNode[]
@@ -45,7 +46,7 @@ interface BillingRow {
   node: KomariNode
   record?: KomariRecord
   parsed: ParsedBilling
-  /** Original currency code resolved from the node's symbol (¥ heuristic applied) */
+  /** Original currency code resolved from the node's symbol */
   fromCode: string
   online: boolean
 }
@@ -54,7 +55,6 @@ const CURRENCY_OPTIONS: { value: DisplayCode; label: string }[] = [
   { value: 'USD', label: 'USD' },
   { value: 'CNY', label: 'CNY' },
   { value: 'EUR', label: 'EUR' },
-  { value: 'JPY', label: 'JPY' },
   { value: 'GBP', label: 'GBP' },
   { value: 'NATIVE', label: '原始' },
 ]
@@ -281,7 +281,7 @@ export function BillingPage({
             <CardFrame title="Billing & Renewal" code="B · 00">
               <div style={{ padding: '60px 20px', textAlign: 'center' }}>
                 <Etch size={11}>NO BILLING DATA</Etch>
-                <div style={{ marginTop: 12, color: 'var(--fg-2)', fontSize: 12, lineHeight: 1.7 }}>
+                <div style={{ marginTop: 12, color: 'var(--fg-2)', fontSize: contentFs(12), lineHeight: 1.7 }}>
                   在 Komari 节点设置里填入 <span style={{ color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>price</span>
                   {' / '}
                   <span style={{ color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>billing_cycle</span>
@@ -291,13 +291,13 @@ export function BillingPage({
                   <span style={{ color: 'var(--accent-bright)', fontFamily: 'var(--font-mono)' }}>expired_at</span>
                   ,本页将自动汇总成本与续期。
                 </div>
-                <div style={{ marginTop: 8, color: 'var(--fg-3)', fontSize: 11 }}>
+                <div style={{ marginTop: 8, color: 'var(--fg-3)', fontSize: contentFs(11) }}>
                   共扫描 {nodes.length} 个探针 · 0 个含订阅信息
                 </div>
               </div>
             </CardFrame>
           </main>
-          <Footer version="v1.0.2" config={config} />
+          <Footer version="v1.0.5" config={config} />
         </div>
       </div>
     )
@@ -344,7 +344,7 @@ export function BillingPage({
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
               <Etch>DISPLAY · CURRENCY</Etch>
               <SerialPlate>FX · 01</SerialPlate>
-              <span style={{ fontSize: 10, color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontSize: contentFs(10), color: 'var(--fg-3)', fontFamily: 'var(--font-mono)' }}>
                 {fallback ? '使用离线汇率表' : '汇率 · open.er-api.com'}
               </span>
             </div>
@@ -426,7 +426,7 @@ export function BillingPage({
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                         <span
                           style={{
-                            fontSize: 12,
+                            fontSize: contentFs(12),
                             fontWeight: 500,
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
@@ -438,7 +438,7 @@ export function BillingPage({
                         <span
                           style={{
                             fontFamily: 'var(--font-mono)',
-                            fontSize: 9,
+                            fontSize: contentFs(9),
                             color: 'var(--fg-3)',
                             letterSpacing: '0.06em',
                           }}
@@ -485,7 +485,7 @@ export function BillingPage({
                             gridTemplateColumns: '8px 1fr 60px 36px',
                             alignItems: 'center',
                             gap: 6,
-                            fontSize: 11,
+                            fontSize: contentFs(11),
                           }}
                         >
                           <span style={{ width: 8, height: 8, background: palette[i] }} />
@@ -513,7 +513,7 @@ export function BillingPage({
                             style={{
                               color: 'var(--fg-3)',
                               textAlign: 'right',
-                              fontSize: 10,
+                              fontSize: contentFs(10),
                               fontFamily: 'var(--font-mono)',
                               fontVariantNumeric: 'tabular-nums',
                             }}
@@ -570,7 +570,7 @@ export function BillingPage({
                       borderBottom: '1px solid var(--edge-engrave)',
                       gap: 12,
                       alignItems: 'center',
-                      fontSize: 11,
+                      fontSize: contentFs(11),
                       background: urgent || past
                         ? 'color-mix(in oklab, var(--signal-bad) 4%, transparent)'
                         : 'transparent',
@@ -583,7 +583,7 @@ export function BillingPage({
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                       <span
                         style={{
-                          fontSize: 12,
+                          fontSize: contentFs(12),
                           color: 'var(--fg-0)',
                           fontWeight: 500,
                           whiteSpace: 'nowrap',
@@ -596,7 +596,7 @@ export function BillingPage({
                       <span
                         style={{
                           fontFamily: 'var(--font-mono)',
-                          fontSize: 9,
+                          fontSize: contentFs(9),
                           color: 'var(--fg-3)',
                           letterSpacing: '0.06em',
                         }}
@@ -607,7 +607,7 @@ export function BillingPage({
                     <SerialPlate>{r.node.region || '—'}</SerialPlate>
                     <span
                       style={{
-                        fontSize: 11,
+                        fontSize: contentFs(11),
                         color: r.node.provider ? 'var(--fg-1)' : 'var(--fg-3)',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -683,7 +683,7 @@ export function BillingPage({
               >
                 <span></span>
                 <span
-                  style={{ fontSize: 13, fontWeight: 600, gridColumn: 'span 3' }}
+                  style={{ fontSize: contentFs(13), fontWeight: 600, gridColumn: 'span 3' }}
                 >
                   TOTAL · {rows.length} subscriptions
                 </span>
@@ -762,7 +762,7 @@ export function BillingPage({
               <div
                 style={{
                   marginTop: 8,
-                  fontSize: 9,
+                  fontSize: contentFs(9),
                   color: 'var(--fg-3)',
                   fontFamily: 'var(--font-mono)',
                   letterSpacing: '0.06em',
@@ -794,13 +794,13 @@ export function BillingPage({
                           justifyContent: 'space-between',
                         }}
                       >
-                        <span style={{ fontSize: 12, color: 'var(--fg-1)' }}>
+                        <span style={{ fontSize: contentFs(12), color: 'var(--fg-1)' }}>
                           {cr.zh} · {cr.en}{' '}
                           <span
                             style={{
                               color: 'var(--fg-3)',
                               fontFamily: 'var(--font-mono)',
-                              fontSize: 10,
+                              fontSize: contentFs(10),
                             }}
                           >
                             ×{cr.count}
@@ -840,7 +840,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v1.0.2" config={config} />
+        <Footer version="v1.0.5" config={config} />
       </div>
     </div>
   )
@@ -945,7 +945,7 @@ function RenewalRow({ row, monthly, fmtRow }: RenewalRowProps) {
         gridTemplateColumns: '1fr 70px 1fr 56px 90px',
         alignItems: 'center',
         gap: 10,
-        fontSize: 11,
+        fontSize: contentFs(11),
         color: 'inherit',
         textDecoration: 'none',
         padding: '2px 0',
@@ -1019,7 +1019,7 @@ function RenewalRow({ row, monthly, fmtRow }: RenewalRowProps) {
           textAlign: 'right',
           fontFamily: 'var(--font-mono)',
           fontVariantNumeric: 'tabular-nums',
-          fontSize: 11,
+          fontSize: contentFs(11),
         }}
       >
         {fmtRow(monthly, row)}/mo
@@ -1060,7 +1060,7 @@ function SectionHeader({ label, count, tone, open, onToggle }: SectionHeaderProp
         cursor: 'pointer',
         color: 'var(--fg-2)',
         fontFamily: 'var(--font-mono)',
-        fontSize: 9,
+        fontSize: contentFs(9),
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
         textAlign: 'left',
@@ -1199,7 +1199,7 @@ function RenewalTimelineBody({ byExpiry, monthlyOf, fmtRow }: TimelineBodyProps)
           borderTop: '1px solid var(--edge-engrave)',
           display: 'grid',
           gridTemplateColumns: 'repeat(13, 1fr)',
-          fontSize: 9,
+          fontSize: contentFs(9),
           fontFamily: 'var(--font-mono)',
           color: 'var(--fg-3)',
           letterSpacing: '0.1em',

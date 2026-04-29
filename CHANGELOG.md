@@ -2,6 +2,26 @@
 
 > Notable changes to 岚 (Ran) — Komari probe theme.
 
+## v1.0.5 — 2026-04
+
+字体大小后台开关 + 访客信息浮卡(带焦点地图)+ 流量单位策略 + 几个小修。
+
+- **字体大小三档** — 后台 `[ SIZE ] 字体大小` 选 standard / large / xlarge,所有用户内容字(数字、表格、节点名、网速、延迟、单位、提示)按 1 / 1.18 / 1.36 缩放;装饰字(Etch 角标、版本号、Sidebar 导航、Topbar 按钮、节点小徽章)保持不变,布局尺寸不变,避免"字大撑爆卡片"
+- **访客信息浮卡** — 首页右下角 IP / 地理 / 运营商 / 链路状态卡。设计走岚的精密金工质感(precision-card 多层 inset shadow + 凹陷读数窗 + SerialPlate + 4 角 crosshair),入场带"仪器启动"扫描线特效。每会话只弹一次,切到其它页面立即关闭。后台 `[ HUD ] 访客信息浮卡` 可关
+- **访客焦点地图** — 浮卡内嵌迷你世界地图,显示访客位置(超大 glow 光晕 + 双相位脉冲 + 全屏十字辅助)。通过 iframe 复用 `map.html`,`index.html` 体积零增量
+- **流量单位策略** — 后台 `[ NET ] 流量单位策略` 选 auto / min-kb / lock-kb,解决密集 NodeTable 里 B/KB/MB 单位频繁跳动的视觉噪音
+- **/admin 入口** — Sidebar 底部加 Komari 后台登录铭牌按钮(SerialPlate 同款蚀刻工艺,顶部高光 + 底部凹陷 + hover 点亮 accent)
+- **取消日元启发式** — 之前 ¥ 标价 > 100 自动当 JPY 处理,误判很多 CNY 节点;现在 ¥ / ￥ 一律 CNY,Billing 货币选项移除 JPY,真要标日元请直接配 'JPY' 等明确符号
+- **MapApp embed 模式扩展** — 新增 `?embed=visitor&lat=&lon=` 子模式,纯静态轻量地图 + 单焦点高亮,不调 useKomari 不画节点,专门给 VisitorAlert iframe 用
+
+## v1.0.4 — reserved
+
+未单独发布,版本号留作 patch buffer。
+
+## v1.0.3 — reserved
+
+未单独发布,版本号留作 patch buffer。
+
 ## v1.0.2 — 2026-04
 
 移动端 Node Detail 页面优化。

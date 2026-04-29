@@ -10,6 +10,7 @@ import { NodeTable, type SortKey, type SortDir } from '@/components/cards/NodeTa
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
+import { contentFs } from '@/utils/fontScale'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
@@ -203,7 +204,7 @@ export function NodesPage({
               <h2
                 style={{
                   margin: 0,
-                  fontSize: 20,
+                  fontSize: contentFs(20),
                   fontWeight: 600,
                   letterSpacing: '-0.02em',
                   color: 'var(--fg-0)',
@@ -261,7 +262,7 @@ export function NodesPage({
                   textAlign: 'center',
                   color: 'var(--fg-3)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
+                  fontSize: contentFs(11),
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
                 }}
