@@ -28,7 +28,7 @@ import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
-import { useMobileDrawer } from '@/hooks/useMediaQuery'
+import { useMobileDrawer, useIsMobile } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -106,6 +106,7 @@ export function NodeDetailPage({
   hubTargetUuid,
 }: Props) {
   const drawer = useMobileDrawer()
+  const isMobile = useIsMobile()
   // Hooks must be called before any early return.
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
 
@@ -357,106 +358,226 @@ export function NodeDetailPage({
             </div>
           </div>
 
-          {/* Specs strip */}
+          {/* Specs strip — 桌面 N 列横排;移动端 2 列网格,允许换行
+              不让数字被省略号吃掉(原来 6 列在 380px 屏每格只剩 ~50px) */}
           <div
             className="precision-card"
             style={{
               padding: 14,
               display: 'grid',
-              gridTemplateColumns: `repeat(${specs.length}, 1fr)`,
+              gridTemplateColumns: isMobile
+                ? 'repeat(2, 1fr)'
+                : `repeat(${specs.length}, 1fr)`,
+              rowGap: isMobile ? 12 : 0,
             }}
           >
-            {specs.map((s, i) => (
-              <div
-                key={s.label}
-                style={{
-                  padding: '6px 12px',
-                  borderRight:
-                    i < specs.length - 1 ? '1px solid var(--edge-engrave)' : 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 3,
-                  minWidth: 0,
-                }}
-              >
-                <Etch>{s.label}</Etch>
-                <span
+            {specs.map((s, i) => {
+              // 移动端 2 列:右侧那列(奇数 index)无右边框,最后一行无下边框
+              const isLastCol = isMobile ? i % 2 === 1 : i === specs.length - 1
+              const totalRows = isMobile ? Math.ceil(specs.length / 2) : 1
+              const myRow = isMobile ? Math.floor(i / 2) : 0
+              const isLastRow = myRow === totalRows - 1
+              return (
+                <div
+                  key={s.label}
                   style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '-0.01em',
-                    color: 'var(--fg-0)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    padding: isMobile ? '6px 10px' : '6px 12px',
+                    borderRight: !isLastCol ? '1px solid var(--edge-engrave)' : 'none',
+                    borderBottom:
+                      isMobile && !isLastRow ? '1px solid var(--edge-engrave)' : 'none',
+                    paddingBottom: isMobile && !isLastRow ? 12 : undefined,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
                   }}
-                  title={String(s.value)}
                 >
-                  {s.value}
-                </span>
-                {s.sub && <Etch size={8}>{s.sub}</Etch>}
-              </div>
-            ))}
+                  <Etch>{s.label}</Etch>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '-0.01em',
+                      color: 'var(--fg-0)',
+                      // 桌面保留 nowrap+ellipsis(列窄了也能 hover 看 title);
+                      // 移动端允许换行,优先信息完整
+                      whiteSpace: isMobile ? 'normal' : 'nowrap',
+                      overflow: isMobile ? 'visible' : 'hidden',
+                      textOverflow: isMobile ? 'clip' : 'ellipsis',
+                      wordBreak: isMobile ? 'break-word' : 'normal',
+                      lineHeight: isMobile ? 1.25 : undefined,
+                    }}
+                    title={String(s.value)}
+                  >
+                    {s.value}
+                  </span>
+                  {s.sub && <Etch size={8}>{s.sub}</Etch>}
+                </div>
+              )
+            })}
           </div>
 
-          {/* Live metrics — five RadialGauges (ref: NodeDetailBoard) */}
-          <div
-            className="precision-card"
-            style={{
-              padding: '20px 16px',
-              display: 'flex',
-              justifyContent: 'space-around',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 16,
-            }}
-          >
-            <RadialGauge
-              value={online ? cpu : 0}
-              max={100}
-              size={140}
-              label="CPU"
-              unit="%"
-              status={cpu > 80 ? 'bad' : cpu > 60 ? 'warn' : 'good'}
-            />
-            <RadialGauge
-              value={online ? ramPct : 0}
-              max={100}
-              size={140}
-              label="MEMORY"
-              unit="%"
-              status={ramPct > 80 ? 'bad' : ramPct > 60 ? 'warn' : 'good'}
-            />
-            <RadialGauge
-              value={online ? diskPct : 0}
-              max={100}
-              size={140}
-              label="DISK"
-              unit="%"
-              status={diskPct > 85 ? 'bad' : diskPct > 70 ? 'warn' : 'good'}
-            />
-            <RadialGauge
-              value={online ? (record?.network_tx ?? 0) / 1024 / 1024 : 0}
-              max={100}
-              size={140}
-              label="NETWORK"
-              unit="MB/s"
-              status="good"
-            />
-            <RadialGauge
-              value={online ? (record?.load1 ?? 0) : 0}
-              max={Math.max(8, (node.cpu_cores ?? 1) * 2)}
-              size={140}
-              label="LOAD AVG"
-              unit=""
-              status={(record?.load1 ?? 0) > (node.cpu_cores ?? 1) * 1.5
-                ? 'bad'
-                : (record?.load1 ?? 0) > (node.cpu_cores ?? 1)
-                  ? 'warn'
-                  : 'good'}
-            />
-          </div>
+          {/* Live metrics — 桌面用 5 个 RadialGauge,移动端用大数字卡。
+              手机上仪表盘的圆环+刻度装饰反而压缩了字号、还要滚屏才能看全,
+              改成 2x2+1 居中的卡片网格,数字 mono 大字号,信息密度更高。 */}
+          {(() => {
+            const metrics = [
+              {
+                key: 'cpu',
+                label: 'CPU',
+                value: online ? cpu : 0,
+                unit: '%',
+                max: 100,
+                fmt: (v: number) => v.toFixed(1),
+                status: cpu > 80 ? 'bad' : cpu > 60 ? 'warn' : 'good',
+              },
+              {
+                key: 'mem',
+                label: 'MEMORY',
+                value: online ? ramPct : 0,
+                unit: '%',
+                max: 100,
+                fmt: (v: number) => v.toFixed(1),
+                status: ramPct > 80 ? 'bad' : ramPct > 60 ? 'warn' : 'good',
+              },
+              {
+                key: 'disk',
+                label: 'DISK',
+                value: online ? diskPct : 0,
+                unit: '%',
+                max: 100,
+                fmt: (v: number) => v.toFixed(1),
+                status: diskPct > 85 ? 'bad' : diskPct > 70 ? 'warn' : 'good',
+              },
+              {
+                key: 'net',
+                label: 'NETWORK',
+                value: online ? (record?.network_tx ?? 0) / 1024 / 1024 : 0,
+                unit: 'MB/s',
+                max: 100,
+                fmt: (v: number) => v.toFixed(1),
+                status: 'good' as const,
+              },
+              {
+                key: 'load',
+                label: 'LOAD AVG',
+                value: online ? (record?.load1 ?? 0) : 0,
+                unit: '',
+                max: Math.max(8, (node.cpu_cores ?? 1) * 2),
+                fmt: (v: number) => v.toFixed(2),
+                status:
+                  (record?.load1 ?? 0) > (node.cpu_cores ?? 1) * 1.5
+                    ? 'bad'
+                    : (record?.load1 ?? 0) > (node.cpu_cores ?? 1)
+                      ? 'warn'
+                      : 'good',
+              },
+            ] as const
+
+            if (isMobile) {
+              return (
+                <div
+                  className="precision-card"
+                  style={{
+                    padding: 12,
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 8,
+                  }}
+                >
+                  {metrics.map((m, i) => {
+                    const colorVar =
+                      m.status === 'bad'
+                        ? 'var(--signal-bad)'
+                        : m.status === 'warn'
+                          ? 'var(--signal-warn)'
+                          : 'var(--fg-0)'
+                    const pct = Math.max(0, Math.min(100, (m.value / m.max) * 100))
+                    // 5 项时让最后一项(LOAD AVG)跨两列居中,避免奇数留空
+                    const isOdd = metrics.length % 2 === 1 && i === metrics.length - 1
+                    return (
+                      <div
+                        key={m.key}
+                        style={{
+                          gridColumn: isOdd ? '1 / -1' : undefined,
+                          padding: '14px 14px 12px',
+                          border: '1px solid var(--edge-engrave)',
+                          background: 'var(--bg-1)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          minWidth: 0,
+                          position: 'relative',
+                        }}
+                      >
+                        <Etch>{m.label}</Etch>
+                        <Numeric
+                          value={m.fmt(m.value)}
+                          unit={m.unit || undefined}
+                          size={32}
+                          weight={500}
+                          color={colorVar}
+                        />
+                        {/* 底部 2px 进度条 — 仪表盘的隐喻替代品 */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            height: 2,
+                            background: 'var(--edge-engrave)',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              height: '100%',
+                              background:
+                                m.status === 'bad'
+                                  ? 'var(--signal-bad)'
+                                  : m.status === 'warn'
+                                    ? 'var(--signal-warn)'
+                                    : 'var(--signal-good)',
+                              transition: 'width 0.4s ease',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            }
+
+            // 桌面:保留原 5 个 RadialGauge
+            return (
+              <div
+                className="precision-card"
+                style={{
+                  padding: '20px 16px',
+                  display: 'flex',
+                  justifyContent: 'space-around',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                }}
+              >
+                {metrics.map((m) => (
+                  <RadialGauge
+                    key={m.key}
+                    value={m.value}
+                    max={m.max}
+                    size={140}
+                    label={m.label}
+                    unit={m.unit}
+                    status={m.status}
+                  />
+                ))}
+              </div>
+            )
+          })()}
 
           {/* Tabs + window selector */}
           <div

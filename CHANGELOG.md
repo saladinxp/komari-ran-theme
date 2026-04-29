@@ -2,6 +2,13 @@
 
 > Notable changes to 岚 (Ran) — Komari probe theme.
 
+## v1.0.2 — 2026-04
+
+移动端 Node Detail 页面优化。
+
+- **Specs strip** — 移动端从 6 列横排改 2 列网格,长字段(如 CPU 型号、OS 全名)允许换行,不再被省略号截断
+- **Live metrics** — 移动端从 5 个 RadialGauge 改为 2x2+1 大数字卡片(LOAD AVG 跨两列居中),`Numeric` 32px mono 字号,底部 2px 进度条作为刻度隐喻;桌面端仍保留 RadialGauge
+
 ## v1.0.1 — 2026-04
 
 Hub 卡片小修。
