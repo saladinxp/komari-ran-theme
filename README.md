@@ -43,6 +43,14 @@
 
 > 截图待补。直接体验:[obsr.net/map.html](https://obsr.net/map.html)
 
+### Visitor Alert · 访客信息浮卡
+
+进入首页 ~2.5 秒后右下角浮现,带"仪器加电"扫描线入场动画(容器 1.2s 沉降 + 扫描线 1.17s 慢扫)。显示访客 IP / 地理位置 / 运营商 / 风险等级 / 链路类型,并在 mini 世界地图上以双相位脉冲标注访客位置。10 秒后自动消失,鼠标 hover 暂停倒计时。每会话只弹一次(sessionStorage 标记),切到其它页面立即关闭并标记会话。后台 `[ HUD ] 访客信息浮卡` 可关。
+
+数据链:`ipapi.co`(主源) → `ipwho.is`(fallback) → `proxycheck.io`(风险评分 + VPN/proxy 检测,4s 超时不阻塞主流程)。地图通过 iframe 复用 `map.html`(`?embed=visitor&lat=&lon=`),`index.html` 体积零增量。
+
+![visitor-alert](./docs/screenshots/07-visitor-alert.jpg)
+
 ### Mobile · 移动端
 
 v1.0 起全面支持手机访问。Sidebar 在 < 768px 改为汉堡抽屉(slide-in + overlay + body scroll lock),Topbar 切换为 icon-only 紧凑模式,4 大数 stat 卡折成单列侧边布局(label/数字 + 自适应宽度 sparkline),Top Talkers 表格重排为 2 行卡片(NODE 一行 / TX·RX 一行,自动注入 ↑↓ 字符)。Geo Map 在窄屏改为说明卡片引导回桌面端(触屏拖拽与页面滑动手势冲突)。所有页面内 padding 收紧并支持 iOS `env(safe-area-inset-*)` 处理刘海与底部 home indicator。
