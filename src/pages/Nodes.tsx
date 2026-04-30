@@ -12,6 +12,7 @@ import type { GlobalHistoryState } from '@/hooks/useGlobalHistory'
 import { resolveRamPercent } from '@/utils/format'
 import { contentFs } from '@/utils/fontScale'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
+import { useSearchQuery, nodeMatchesQuery } from '@/hooks/useSearchQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -98,8 +99,11 @@ export function NodesPage({
     setSortDir(descByDefault.includes(key) ? 'desc' : 'asc')
   }
 
+  const [searchQuery] = useSearchQuery()
+
   const filtered = useMemo(() => {
     const list = nodes.filter((n) => {
+      if (!nodeMatchesQuery(n, searchQuery)) return false
       if (group !== 'ALL') {
         const ng = (n.group ?? '').trim()
         if (group === '未分组' ? ng !== '' : ng !== group) return false
@@ -152,7 +156,7 @@ export function NodesPage({
       },
     }
     return [...list].sort((a, b) => cmp[sortKey](a, b) * dir)
-  }, [nodes, records, filter, group, sortKey, sortDir])
+  }, [nodes, records, filter, group, sortKey, sortDir, searchQuery])
 
   const stats = useMemo(() => {
     let online = 0
@@ -187,6 +191,8 @@ export function NodesPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -267,7 +273,11 @@ export function NodesPage({
                   textTransform: 'uppercase',
                 }}
               >
-                {nodes.length === 0 ? 'NO NODES CONFIGURED' : 'NO NODES MATCH FILTER'}
+                {nodes.length === 0
+                  ? 'NO NODES CONFIGURED'
+                  : searchQuery.trim()
+                    ? `NO MATCH FOR "${searchQuery.toUpperCase()}"`
+                    : 'NO NODES MATCH FILTER'}
               </div>
             </CardFrame>
           ) : (

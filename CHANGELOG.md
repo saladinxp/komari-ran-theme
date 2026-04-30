@@ -2,6 +2,24 @@
 
 > Notable changes to 岚 (Ran) — Komari probe theme.
 
+## v1.0.6 — 2026-04
+
+### 新功能
+
+- **顶栏搜索栏接入** — 之前的 `SEARCH NODES` 输入框只是 visual-only 占位,本版本接入实际过滤逻辑。输入即时过滤 Overview 卡片网格 + Nodes 表格,匹配维度覆盖节点 name / region / IP / group / tags(忽略大小写)。`Cmd+K`(Mac)/ `Ctrl+K`(其他)/ `/` 聚焦输入框,`Esc` 清空,下拉建议显示前 8 个匹配节点,`Enter` 直接跳转 NodeDetail。状态用 URL hash `#search=...` 持久化,跨页/刷新都保持
+- **详情页指标显示后台开关** — 新增 `[ METRICS ] 详情页指标显示`(auto / gauge / numeric)。auto 维持现有行为(桌面圆环 + 移动数字卡);gauge 强制圆环;numeric 强制数字大字卡(桌面 5 列横排,移动 2x2+1 居中)。给偏好极简数字、不喜欢圆环装饰的用户一个选项
+
+### 修复
+
+- **顶栏搜索栏 dist 漏 build** — v1.0.5 release zip 里 `dist/` 是搜索代码加入前的产物,Topbar 渲染了静态 `<span>SEARCH NODES</span>` 而不是真 `<input>`,点击无任何反应。本版本重 build 修复
+- **详情页移动端 1H 图表横向溢出** — iOS Safari 进入主机详情页,4 张 1H 历史图(CPU / Memory / Network / LoadAvg)被强制 2 列网格撑开,Memory 和 Network 卡偏移到屏幕右侧需要横向滚动才能看到。本版本移动端改单列堆叠,保留桌面 2×2
+- **详情页 Ping Targets 移动端同样横向溢出** — 同上原因,带 area chart 的卡片在 ~150px 宽度下采样密度被压缩成糊。本版本移动端单列、桌面保留 2 列
+
+### 打磨
+
+- **VisitorAlert 焦点地图视觉权重加强** — v1.0.5 浮卡里的 mini 地图(320×123px)焦点 glow + 中心圆相对小尺寸太轻,访客位置不够显眼。本版本 glow 半径 60→90、中心实心圆 9→14、白点 3→4(按比例)、双相位脉冲振幅 14-48→20-72,在小尺寸里仍能维持"焦点"的视觉权重
+- **README 加同作者其他 Komari 主题区** — 末尾增加 NanoMuse / PRTS Industrial Monitor 链接
+
 ## v1.0.5 — 2026-04
 
 > 累计 v1.0.3 / v1.0.4 / v1.0.5 三个迭代合并发布。

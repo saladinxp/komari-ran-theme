@@ -90,11 +90,11 @@ export function VisitorFocusMap({ lat, lon, width = 1000, height = 500 }: Props)
       {/* === 访客焦点 === */}
       {focus && (
         <g>
-          {/* 大范围 glow 光晕(直径 ~120px,跟卡片小尺寸成比例) */}
+          {/* 大范围 glow 光晕 — 320×123px 卡内尺寸下需要更宽的视觉权重 */}
           <circle
             cx={focus.x}
             cy={focus.y}
-            r={60}
+            r={90}
             fill="url(#visitorGlow)"
           />
 
@@ -110,7 +110,7 @@ export function VisitorFocusMap({ lat, lon, width = 1000, height = 500 }: Props)
           >
             <animate
               attributeName="r"
-              values="14;48"
+              values="20;72"
               dur="2s"
               repeatCount="indefinite"
             />
@@ -134,7 +134,7 @@ export function VisitorFocusMap({ lat, lon, width = 1000, height = 500 }: Props)
           >
             <animate
               attributeName="r"
-              values="14;48"
+              values="20;72"
               dur="2s"
               begin="1s"
               repeatCount="indefinite"
@@ -171,8 +171,8 @@ export function VisitorFocusMap({ lat, lon, width = 1000, height = 500 }: Props)
           />
 
           {/* 中心实心圆 + 白点 */}
-          <circle cx={focus.x} cy={focus.y} r={9} fill="var(--accent-bright)" />
-          <circle cx={focus.x} cy={focus.y} r={3} fill="white" />
+          <circle cx={focus.x} cy={focus.y} r={14} fill="var(--accent-bright)" />
+          <circle cx={focus.x} cy={focus.y} r={4} fill="white" />
         </g>
       )}
     </svg>

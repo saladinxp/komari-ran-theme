@@ -276,6 +276,8 @@ export function BillingPage({
             lastUpdate={lastUpdate}
             conn={conn}
                       onMobileMenu={drawer.onOpen}
+                      nodes={nodes}
+                      records={records}
           />
           <main className="app-main" style={{ padding: 20, flex: 1 }}>
             <CardFrame title="Billing & Renewal" code="B · 00">
@@ -297,7 +299,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v1.0.5" config={config} />
+          <Footer version="v1.0.6" config={config} />
         </div>
       </div>
     )
@@ -326,6 +328,8 @@ export function BillingPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -840,7 +844,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v1.0.5" config={config} />
+        <Footer version="v1.0.6" config={config} />
       </div>
     </div>
   )

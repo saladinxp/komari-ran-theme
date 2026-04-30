@@ -22,6 +22,7 @@ import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { formatBytes, formatBps } from '@/utils/format'
 import { contentFs } from '@/utils/fontScale'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
+import { useSearchQuery, nodeMatchesQuery } from '@/hooks/useSearchQuery'
 
 type Theme = 'ran-night' | 'ran-mist'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
@@ -155,8 +156,13 @@ export function OverviewPage({
     ]
   }, [nodes, records, history])
 
+  const [searchQuery] = useSearchQuery()
+
   const filteredNodes = useMemo(() => {
     return nodes.filter((n) => {
+      // Search filter — applied first so it composes with group/status filters
+      // below. Empty query short-circuits inside nodeMatchesQuery.
+      if (!nodeMatchesQuery(n, searchQuery)) return false
       // Group filter
       if (group !== 'ALL') {
         const ng = (n.group ?? '').trim()
@@ -170,7 +176,7 @@ export function OverviewPage({
       if (filter === 'warn') return r?.online && (r.cpu ?? 0) > 80
       return true
     })
-  }, [nodes, records, filter, group])
+  }, [nodes, records, filter, group, searchQuery])
 
   const stats = useMemo(() => {
     let online = 0
@@ -306,6 +312,8 @@ export function OverviewPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -401,7 +409,9 @@ export function OverviewPage({
                 ? conn === 'open'
                   ? 'NO PROBES CONFIGURED'
                   : 'CONNECTING TO PROBE NETWORK …'
-                : 'NO PROBES MATCH FILTER'}
+                : searchQuery.trim()
+                  ? `NO PROBES MATCH "${searchQuery.toUpperCase()}"`
+                  : 'NO PROBES MATCH FILTER'}
             </div>
           ) : view === 'grid' ? (
             <div

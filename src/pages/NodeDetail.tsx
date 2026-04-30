@@ -27,6 +27,7 @@ import { bucketLoadHistory, hasLoadData } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { contentFs } from '@/utils/fontScale'
+import { parseMetricsDisplay, resolveMetricsForm } from '@/utils/metricsDisplay'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
 import { hashFor } from '@/router/route'
 import { useMobileDrawer, useIsMobile } from '@/hooks/useMediaQuery'
@@ -108,6 +109,10 @@ export function NodeDetailPage({
 }: Props) {
   const drawer = useMobileDrawer()
   const isMobile = useIsMobile()
+  const metricsForm = resolveMetricsForm(
+    parseMetricsDisplay(config?.theme_settings?.metrics_display),
+    isMobile,
+  )
   // Hooks must be called before any early return.
   const [windowKey, setWindowKey] = useState<WindowKey>('1h')
 
@@ -190,6 +195,8 @@ export function NodeDetailPage({
             lastUpdate={lastUpdate}
             conn={conn}
                       onMobileMenu={drawer.onOpen}
+                      nodes={nodes}
+                      records={records}
           />
           <main className="app-main" style={{ flex: 1, padding: 20 }}>
             {stillLoading ? (
@@ -332,6 +339,8 @@ export function NodeDetailPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -419,9 +428,11 @@ export function NodeDetailPage({
             })}
           </div>
 
-          {/* Live metrics — 桌面用 5 个 RadialGauge,移动端用大数字卡。
-              手机上仪表盘的圆环+刻度装饰反而压缩了字号、还要滚屏才能看全,
-              改成 2x2+1 居中的卡片网格,数字 mono 大字号,信息密度更高。 */}
+          {/* Live metrics — 三种形态:
+              - auto: 桌面 RadialGauge / 移动数字卡(默认)
+              - gauge: 强制 RadialGauge(任何屏幕)
+              - numeric: 强制大数字卡(任何屏幕)
+              数字卡形态在移动端走 2x2+1(LOAD AVG 居中);桌面端走 5 列横排。 */}
           {(() => {
             const metrics = [
               {
@@ -476,14 +487,16 @@ export function NodeDetailPage({
               },
             ] as const
 
-            if (isMobile) {
+            if (metricsForm === 'numeric') {
+              // 移动端 2 列(LOAD AVG 跨列居中) / 桌面端 5 列横排
+              const numCols = isMobile ? 2 : metrics.length
               return (
                 <div
                   className="precision-card"
                   style={{
                     padding: 12,
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gridTemplateColumns: `repeat(${numCols}, 1fr)`,
                     gap: 8,
                   }}
                 >
@@ -495,8 +508,10 @@ export function NodeDetailPage({
                           ? 'var(--signal-warn)'
                           : 'var(--fg-0)'
                     const pct = Math.max(0, Math.min(100, (m.value / m.max) * 100))
-                    // 5 项时让最后一项(LOAD AVG)跨两列居中,避免奇数留空
-                    const isOdd = metrics.length % 2 === 1 && i === metrics.length - 1
+                    // 移动端 5 项时让最后一项(LOAD AVG)跨两列居中,避免奇数留空。
+                    // 桌面端 5 列直接铺满,不需要跨列。
+                    const isOdd =
+                      isMobile && metrics.length % 2 === 1 && i === metrics.length - 1
                     return (
                       <div
                         key={m.key}
@@ -643,11 +658,14 @@ export function NodeDetailPage({
 
           {tab === 'overview' && (
             <>
-              {/* Charts grid — 2×2, real history from /api/records/load */}
+              {/* Charts grid — desktop 2×2, mobile stacks single-column.
+                  Side-by-side AreaCharts on iPhone make each chart ~150px wide
+                  which collapses sample density into mush; vertical stack
+                  preserves readability. */}
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                   gap: 16,
                 }}
               >
@@ -911,7 +929,7 @@ export function NodeDetailPage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))',
                     gap: 14,
                   }}
                 >

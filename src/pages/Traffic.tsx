@@ -281,6 +281,8 @@ export function TrafficPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         <main className="app-main" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

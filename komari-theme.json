@@ -2,7 +2,7 @@
   "name": "Ran · 岚",
   "short": "ran",
   "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "Miuler",
   "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
@@ -47,10 +47,18 @@
         "help": "节点流量数字的单位显示方式。auto = 自适应 B/KB/MB/GB(默认,最精确);min-kb = 下限锁 KB(< 1KB 显示 0 KB/s,抹掉空闲服务器的 B 级别抖动);lock-kb = 全程锁 KB/s(数字大就大,跨档不变化)。"
       },
       {
+        "key": "metrics_display",
+        "name": "[ METRICS ] 详情页指标显示",
+        "type": "select",
+        "options": "auto,gauge,numeric",
+        "default": "auto",
+        "help": "节点详情页 CPU/内存/磁盘/网络/负载 的显示形态。auto = 桌面圆环仪表盘 + 移动数字大字卡(默认);gauge = 任意屏幕都用圆环仪表盘;numeric = 任意屏幕都用大数字卡(适合偏好极简数字、不喜欢圆环装饰的用户)。"
+      },
+      {
         "key": "version_tag",
         "name": "[ SYS.VER ] 版本号",
         "type": "string",
-        "default": "v1.0.5",
+        "default": "v1.0.6",
         "help": "页脚显示的版本标识"
       },
       {

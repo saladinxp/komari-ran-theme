@@ -738,6 +738,8 @@ export function HubPage({
             lastUpdate={lastUpdate}
             conn={conn}
                       onMobileMenu={drawer.onOpen}
+                      nodes={nodes}
+                      records={records}
           />
           <main style={{ padding: 24 }}>
             <CardFrame title={stillLoading ? 'Loading hub …' : 'Node not found'} code="…">
@@ -807,6 +809,8 @@ export function HubPage({
           lastUpdate={lastUpdate}
           conn={conn}
                   onMobileMenu={drawer.onOpen}
+                  nodes={nodes}
+                  records={records}
         />
 
         {/* Command bar — hostname / uuid / state / clock. The cockpit identity strip. */}
