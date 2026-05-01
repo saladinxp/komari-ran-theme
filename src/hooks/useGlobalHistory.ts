@@ -43,10 +43,22 @@ export interface AggregateSeries {
   nodeCount: number[]
 }
 
+/** Per-node ping summary derived from the primary (lowest-id) ping task. */
+export interface PingNodeStats {
+  /** Average latency (ms) of the primary task across the queried window. */
+  avg?: number
+  /** Loss percent (0..100) of the primary task across the queried window. */
+  loss: number
+  /** Display name of the primary task (for tooltips / debug). */
+  taskName?: string
+}
+
 export interface GlobalHistoryState {
   byNode: Record<string, PerNodeSeries>
   /** Per-node ping series — bucketed mean latency over windowMs (60 slots). */
   pingByNode: Record<string, number[]>
+  /** Per-node ping stats — current latency + loss percent. */
+  pingStatsByNode: Record<string, PingNodeStats>
   aggregate: AggregateSeries
   ping: PingHistory
   loading: boolean
@@ -91,6 +103,7 @@ export function useGlobalHistory(
   const [state, setState] = useState<GlobalHistoryState>({
     byNode: {},
     pingByNode: {},
+    pingStatsByNode: {},
     aggregate: emptyAggregate(),
     ping: EMPTY_PING,
     loading: true,
@@ -104,6 +117,7 @@ export function useGlobalHistory(
       setState({
         byNode: {},
         pingByNode: {},
+        pingStatsByNode: {},
         aggregate: emptyAggregate(),
         ping: EMPTY_PING,
         loading: false,
@@ -173,9 +187,17 @@ export function useGlobalHistory(
       }
 
       // Merge per-node ping into a single PingHistory + per-node ms series.
+      // Strategy: pick the "primary" task per node — the task with the lowest
+      // id (= earliest created in Komari admin = first row in the latency
+      // monitor list) — and surface its backend-computed avg/loss as the
+      // node's headline latency/loss readout. The sparkline is filtered to
+      // the same primary task so the bar chart and the headline number agree.
+      // Other tasks are still preserved in the merged PingHistory so
+      // NodeDetail can plot all targets separately.
       const tasksById = new Map<number, PingTask>()
       const allRecords: PingRecord[] = []
       const pingByNode: Record<string, number[]> = {}
+      const pingStatsByNode: Record<string, PingNodeStats> = {}
       const now = Date.now()
       const start = now - windowMs
       const bucketMs = windowMs / BUCKETS
@@ -183,11 +205,20 @@ export function useGlobalHistory(
         for (const t of ping.tasks ?? []) {
           if (!tasksById.has(t.id)) tasksById.set(t.id, t)
         }
+
+        // Pick this node's primary target — lowest-id task that this node
+        // actually has data for (samples present in the window).
+        const tasksSorted = [...(ping.tasks ?? [])].sort((a, b) => a.id - b.id)
+        const primary = tasksSorted[0]
+        const primaryId = primary?.id
+
+        // Build a sparkline from primary-task records only.
         const sum = new Array(BUCKETS).fill(0)
         const cnt = new Array(BUCKETS).fill(0)
         for (const r of ping.records ?? []) {
           // Stamp client onto the merged record so the global view can split by node.
           allRecords.push({ ...r, client: r.client ?? uuid })
+          if (primaryId == null || r.task_id !== primaryId) continue
           const tsec = new Date(r.time).getTime()
           if (!Number.isFinite(tsec) || tsec < start) continue
           const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor((tsec - start) / bucketMs)))
@@ -199,6 +230,19 @@ export function useGlobalHistory(
           }
         }
         pingByNode[uuid] = sum.map((s, i) => (cnt[i] > 0 ? s / cnt[i] : 0))
+
+        // Headline number: trust backend's avg/loss for the primary task.
+        // These are pre-computed per node per task across the queried window,
+        // so they're accurate and free.
+        if (primary) {
+          pingStatsByNode[uuid] = {
+            avg: typeof primary.avg === 'number' ? primary.avg : undefined,
+            loss: typeof primary.loss === 'number' ? primary.loss : 0,
+            taskName: primary.name,
+          }
+        } else {
+          pingStatsByNode[uuid] = { loss: 0 }
+        }
       }
       const ping: PingHistory = {
         count: allRecords.length,
@@ -206,7 +250,7 @@ export function useGlobalHistory(
         records: allRecords,
       }
 
-      setState({ byNode, pingByNode, aggregate: agg, ping, loading: false })
+      setState({ byNode, pingByNode, pingStatsByNode, aggregate: agg, ping, loading: false })
     }
 
     setState((prev) => ({ ...prev, loading: prev.loading || Object.keys(prev.byNode).length === 0 }))

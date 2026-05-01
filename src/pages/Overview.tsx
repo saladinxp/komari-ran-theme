@@ -432,6 +432,7 @@ export function OverviewPage({
                     record={records[node.uuid]}
                     netSpark={history?.byNode[node.uuid]?.netOut ?? []}
                     pingSpark={history?.pingByNode[node.uuid] ?? []}
+                    pingStats={history?.pingStatsByNode[node.uuid]}
                   />
                 </a>
               ))}
@@ -449,6 +450,7 @@ export function OverviewPage({
                     record={records[node.uuid]}
                     netSpark={history?.byNode[node.uuid]?.netOut ?? []}
                     pingSpark={history?.pingByNode[node.uuid] ?? []}
+                    pingStats={history?.pingStatsByNode[node.uuid]}
                   />
                 </a>
               ))}

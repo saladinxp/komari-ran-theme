@@ -19,13 +19,15 @@ interface Props {
   record?: KomariRecord
   netSpark?: number[]
   pingSpark?: number[]
+  /** Derived ping summary from history (Komari WS frame doesn't carry ping/loss). */
+  pingStats?: { avg?: number; loss: number; taskName?: string }
 }
 
 /**
  * NodeCardRow — single-row layout. Wide horizontal: status / name+os /
  * region / CPU / MEM / DISK / NET / PING+LOSS / status badge + uptime.
  */
-export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Props) {
+export function NodeCardRow({ node, record, netSpark = [], pingSpark = [], pingStats }: Props) {
   const online = record?.online === true
   const cpu = record?.cpu ?? 0
   const ramPct = resolveRamPercent(record?.memory_used, record?.memory_total) ?? 0
@@ -164,9 +166,11 @@ export function NodeCardRow({ node, record, netSpark = [], pingSpark = [] }: Pro
             whiteSpace: 'nowrap',
           }}
         >
-          {online && record?.ping != null ? `${Math.round(record.ping)}ms` : '— ms'}
+          {online && (record?.ping ?? pingStats?.avg) != null
+            ? `${Math.round((record?.ping ?? pingStats?.avg) as number)}ms`
+            : '— ms'}
           {' · '}
-          {formatPercent(record?.loss, 1)}
+          {formatPercent(record?.loss ?? pingStats?.loss, 1)}
         </span>
       </div>
 

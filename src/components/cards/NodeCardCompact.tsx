@@ -10,6 +10,8 @@ interface Props {
   record?: KomariRecord
   netSpark?: number[]
   pingSpark?: number[]
+  /** Derived ping summary from history (Komari WS frame doesn't carry ping/loss). */
+  pingStats?: { avg?: number; loss: number; taskName?: string }
 }
 
 const COLOR_BY_STATUS: Record<NodeStatus, string> = {
@@ -87,7 +89,7 @@ function MetricCell({
   )
 }
 
-export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }: Props) {
+export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [], pingStats }: Props) {
   const status = deriveStatus(record)
   const offline = status === 'bad'
   const statusColor = COLOR_BY_STATUS[status]
@@ -276,7 +278,10 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <span style={{ fontSize: contentFs(11), color: 'var(--fg-2)', fontFamily: 'var(--font-mono)' }}>延迟</span>
             <span className="mono tnum" style={{ fontSize: contentFs(12), color: statusColor }}>
-              {record?.ping != null ? Math.round(record.ping) : '—'}
+              {(() => {
+                const ms = record?.ping ?? pingStats?.avg
+                return ms != null ? Math.round(ms) : '—'
+              })()}
               <span style={{ fontSize: contentFs(9), color: 'var(--fg-2)', marginLeft: 1 }}>ms</span>
             </span>
           </div>
@@ -286,10 +291,10 @@ export function NodeCardCompact({ node, record, netSpark = [], pingSpark = [] }:
               className="mono tnum"
               style={{
                 fontSize: contentFs(12),
-                color: (record?.loss ?? 0) > 1 ? 'var(--signal-warn)' : 'var(--signal-good)',
+                color: ((record?.loss ?? pingStats?.loss) ?? 0) > 1 ? 'var(--signal-warn)' : 'var(--signal-good)',
               }}
             >
-              {formatPercent(record?.loss, 1)}
+              {formatPercent(record?.loss ?? pingStats?.loss, 1)}
             </span>
           </div>
         </div>

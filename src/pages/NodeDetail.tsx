@@ -25,6 +25,7 @@ import {
 } from '@/utils/format'
 import { bucketLoadHistory, hasLoadData } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
+import type { PingTask } from '@/api/client'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { contentFs } from '@/utils/fontScale'
 import { parseMetricsDisplay, resolveMetricsForm } from '@/utils/metricsDisplay'
@@ -840,14 +841,33 @@ export function NodeDetailPage({
 
                 <CardFrame title="Latency" code="L · 11">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <ConnRow
-                      label="LATENCY"
-                      value={
-                        online && record?.ping != null ? `${Math.round(record.ping)} ms` : '—'
-                      }
-                    />
-                    <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
-                    <ConnRow label="PACKET LOSS" value={formatPercent(record?.loss, 1)} />
+                    {(() => {
+                      // Komari WS frame doesn't carry ping/loss — fall back to
+                      // the "primary" target (lowest task id = first row in
+                      // admin's latency monitor list). Backend already
+                      // computes avg/loss per task, so we just read those.
+                      const primary = [...pingTargets].sort(
+                        (a, b) => a.task.id - b.task.id,
+                      )[0]
+                      const primaryAvg =
+                        primary &&
+                        typeof (primary.task as PingTask).avg === 'number'
+                          ? (primary.task as PingTask).avg
+                          : primary?.latest
+                      const primaryLoss = primary?.task.loss
+                      const latency = record?.ping ?? primaryAvg
+                      const loss = record?.loss ?? primaryLoss
+                      return (
+                        <>
+                          <ConnRow
+                            label="LATENCY"
+                            value={online && latency != null ? `${Math.round(latency)} ms` : '—'}
+                          />
+                          <div style={{ borderTop: '1px solid var(--edge-engrave)' }} />
+                          <ConnRow label="PACKET LOSS" value={formatPercent(loss, 1)} />
+                        </>
+                      )
+                    })()}
                     <div className="seam" style={{ margin: '6px 0' }} />
                     <div
                       style={{

@@ -67,7 +67,17 @@ export interface PingTask {
   id: number
   name: string
   interval: number
+  /** Loss percent (0..100) computed by backend across the queried window. */
   loss: number
+  /** Average latency ms across the queried window (when available). */
+  avg?: number
+  /** Min/max latency ms across the queried window (when available). */
+  min?: number
+  max?: number
+  /** Total samples in the queried window (when available). */
+  total?: number
+  /** Probe type: usually 'icmp' or 'tcp'. */
+  type?: string
 }
 
 export interface PingRecord {
