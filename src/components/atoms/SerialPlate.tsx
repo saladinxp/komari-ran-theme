@@ -7,6 +7,7 @@ interface Props {
 /**
  * SerialPlate — small etched plaque, like the SN/FW stamp on hi-fi gear.
  * Used inline next to titles and for technical metadata.
+ * v2: AA-grade fg-2 color, no text-shadow (9px shadow blurs at this size).
  */
 export function SerialPlate({ children }: Props) {
   return (

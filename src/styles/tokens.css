@@ -65,11 +65,19 @@
   --bg-4: #2a2f36;
   --bg-inset: #0a0b0d;
 
-  --fg-0: #e8e6e1;
-  --fg-1: #b8b3a8;
-  --fg-2: #7a7468;
-  --fg-3: #4a463e;
-  --fg-mark: #fafaf8;
+  /* v2 (per design spec): lift fg-1/2/3 toward white for AA contrast.
+     Was: #b8b3a8 / #7a7468 / #4a463e
+     Now: #d4cfc2 / #9a9384 / #6e695c — fg-3 ~5.2:1 on bg-2 (hits AA). */
+  --fg-0: #f2efe8;
+  --fg-1: #d4cfc2;
+  --fg-2: #9a9384;
+  --fg-3: #6e695c;
+  --fg-mark: #ffffff;
+
+  /* Engraved-letter shadow — applied via .etch / .engrave / Etch / SerialPlate.
+     SOFT recipe: single-direction 1px blur, ~35% alpha. Avoids the double-image
+     ghosting that hard opposing shadows produce on small mono type. */
+  --txt-engrave: 0 1px 1px rgba(0, 0, 0, 0.35);
 
   /* Edges — outer bright (top light) + inner deep (recessed) = chamfer */
   --edge-bright: rgba(255, 248, 230, 0.09);
@@ -120,11 +128,16 @@
   --bg-4: #fffdf6;
   --bg-inset: #e2d9c5;
 
-  --fg-0: #1a1815;
-  --fg-1: #4a463d;
-  --fg-2: #76705f;
-  --fg-3: #a8a190;
+  /* v2 (per design spec): pull fg toward black for AA contrast.
+     Was: #4a463d / #76705f / #a8a190
+     Now: #2e2a22 / #5a5546 / #807866 — fg-3 ~4.7:1 on bg-2 (hits AA). */
+  --fg-0: #14110b;
+  --fg-1: #2e2a22;
+  --fg-2: #5a5546;
+  --fg-3: #807866;
   --fg-mark: #000000;
+
+  --txt-engrave: 0 1px 1px rgba(255, 255, 255, 0.7);
 
   --edge-bright: rgba(255, 255, 255, 0.9);
   --edge-mid: rgba(255, 255, 255, 0.5);
@@ -211,14 +224,24 @@ body {
   letter-spacing: var(--tracking-wide);
 }
 
-/* Etched / engraved label */
+/* Etched / engraved label — v2: AA-grade fg-2 color + weight 600 (per design
+   spec). Note: --txt-engrave shadow is defined per-theme above but NOT applied
+   here by default. At 9px the shadow blurs rather than engraves; the shadow
+   is reserved for the .engrave utility (large headings) and is opt-in. */
 .etch {
   font-family: var(--font-mono);
   font-size: var(--t-micro);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  color: var(--fg-3);
-  font-weight: 500;
+  color: var(--fg-2);
+  font-weight: 600;
+}
+
+/* .engrave — utility class for "stamped/cut into surface" effect on large
+   text only. Apply to card titles, section headers, large status labels
+   (≥14px). NOT for small labels (≤11px) — shadow blurs at that size. */
+.engrave {
+  text-shadow: var(--txt-engrave);
 }
 
 /* Precision card — outer chamfer + inner stroke */

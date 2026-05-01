@@ -56,7 +56,7 @@ interface Props {
 export function Sidebar({
   active,
   region = '岚 / RAN',
-  version = 'v1.0.7',
+  version = 'v1.0.8',
   hubTargetUuid,
   crossPage = false,
   mobileOpen = false,
