@@ -3,7 +3,8 @@
    Design tokens. Inspired by precision-machined hi-fi gear:
    stepped chamfered edges, etched serial plates, sunken displays,
    true 1px hairlines. No glow, no scanlines, no spectacle.
-   Two themes: ran-night (graphite-deep) and ran-mist (porcelain).
+   Themes: ran-night (graphite), ran-mist (porcelain), ran-ember (jujube),
+           ran-sakura (cherry blossom), ran-lavender (pale lilac).
    ============================================================ */
 
 :root {
@@ -176,6 +177,198 @@
   --map-land-hover: #e1d4b8;
   --map-border: rgba(50, 40, 25, 0.32);
   --map-graticule: rgba(50, 40, 25, 0.10);
+}
+
+/* ── ran-ember (jujube — warm dark red) ───────────────────── */
+[data-theme='ran-ember'] {
+  /* Almost black with a hint of red — Chinese jujube wood, not blood.
+     Same darkness as ran-night (#0c0d0f), only the hue shifts warm.
+     Sits in the same restraint family as night/mist, not a candy red. */
+  --bg-0: #1c0c0a;
+  --bg-1: #221412;
+  --bg-2: #2a1815;
+  --bg-3: #321e1a;
+  --bg-4: #3c2620;
+  --bg-inset: #150705;
+
+  /* fg: warm white → warm gray → red-tinted gray → deep red-gray.
+     fg-3 ~5:1 on bg-2 (hits AA). Same lightness curve as ran-night,
+     just shifted toward warm. */
+  --fg-0: #f5ebe5;
+  --fg-1: #d8c4bd;
+  --fg-2: #a0857d;
+  --fg-3: #74564f;
+  --fg-mark: #ffffff;
+
+  --txt-engrave: 0 1px 1px rgba(0, 0, 0, 0.4);
+
+  /* Edges — warm-tinted hairlines so the bevels don't look cool/blue. */
+  --edge-bright: rgba(255, 220, 200, 0.10);
+  --edge-mid: rgba(255, 220, 200, 0.06);
+  --edge-deep: rgba(0, 0, 0, 0.6);
+  --edge-engrave: rgba(0, 0, 0, 0.45);
+
+  /* Accent — slightly hotter copper than night (#c28840 → #c8853a) so it
+     reads cleanly against the warmer red ground without dimming. */
+  --accent: #c8853a;
+  --accent-dim: #8a5828;
+  --accent-bright: #e0a050;
+
+  /* Signal-bad lifted to bright orange-red so it cleanly separates from the
+     warm-red ground. signal-warn is fine (amber on warm red works).
+     signal-info gets a small lift toward cooler blue for max contrast. */
+  --signal-good: #6db485;
+  --signal-warn: #d9a154;
+  --signal-bad: #ff7058;
+  --signal-info: #6b8db5;
+
+  --shadow-card:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-inset:
+    inset 0 1px 0 var(--edge-deep),
+    inset 0 -1px 0 var(--edge-bright),
+    inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-button:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 2px rgba(0, 0, 0, 0.45);
+
+  --grid-line: rgba(255, 220, 200, 0.03);
+  --grid-line-strong: rgba(255, 220, 200, 0.06);
+
+  /* Map — land slightly redder than bg-2 so continents read against ocean. */
+  --map-land: #2a1612;
+  --map-land-hover: #3a2018;
+  --map-border: rgba(255, 220, 200, 0.22);
+  --map-graticule: rgba(255, 220, 200, 0.08);
+}
+
+/* ── ran-sakura (cherry blossom — pale pink) ──────────────── */
+[data-theme='ran-sakura'] {
+  /* Pale Japanese cherry-blossom pink — washi paper with a sakura tag,
+     not candy. Same lightness as ran-mist, hue shifted toward pink. */
+  --bg-0: #fbe6ea;
+  --bg-1: #fceaee;
+  --bg-2: #fdeff2;
+  --bg-3: #fef4f6;
+  --bg-4: #fef9fa;
+  --bg-inset: #efd2d8;
+
+  /* fg: dark plum → deep mauve → mid mauve → pale mauve.
+     fg-3 ~4.7:1 on bg-2 (hits AA). */
+  --fg-0: #3a1820;
+  --fg-1: #5a2832;
+  --fg-2: #8a5660;
+  --fg-3: #b08490;
+  --fg-mark: #000000;
+
+  --txt-engrave: 0 1px 1px rgba(255, 255, 255, 0.7);
+
+  --edge-bright: rgba(255, 255, 255, 0.85);
+  --edge-mid: rgba(255, 255, 255, 0.45);
+  --edge-deep: rgba(120, 40, 60, 0.20);
+  --edge-engrave: rgba(120, 40, 60, 0.13);
+
+  /* Accent — deep pink, same family as the ground (per design spec:
+     "background a soft tone, accent the same hue one stop deeper"). */
+  --accent: #c4426a;
+  --accent-dim: #8a2e4a;
+  --accent-bright: #d85a82;
+
+  /* Signal-bad pulled deeper toward burgundy so offline reads clearly
+     against pale pink (a generic red would blend). signal-good lifted
+     a touch toward green to keep contrast with mauve fg. */
+  --signal-good: #5a9a78;
+  --signal-warn: #a06a18;
+  --signal-bad: #8a2828;
+  --signal-info: #4a6b90;
+
+  --shadow-card:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 3px rgba(120, 40, 60, 0.08);
+  --shadow-inset:
+    inset 0 1px 0 var(--edge-deep),
+    inset 0 -1px 0 var(--edge-bright),
+    inset 0 1px 3px rgba(120, 40, 60, 0.12);
+  --shadow-button:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 2px rgba(120, 40, 60, 0.1);
+
+  --grid-line: rgba(120, 40, 60, 0.04);
+  --grid-line-strong: rgba(120, 40, 60, 0.08);
+
+  /* Map — land slightly deeper pink than bg-2 so continents register. */
+  --map-land: #f0d4dc;
+  --map-land-hover: #e8c0cc;
+  --map-border: rgba(120, 40, 60, 0.30);
+  --map-graticule: rgba(120, 40, 60, 0.10);
+}
+
+/* ── ran-lavender (pale lilac) ────────────────────────────── */
+[data-theme='ran-lavender'] {
+  /* Pale Provençal lavender — pastoral lilac, not Barbie purple. Same
+     lightness as ran-mist, hue shifted cool toward violet. */
+  --bg-0: #e4dceb;
+  --bg-1: #e9e2ef;
+  --bg-2: #ede7f3;
+  --bg-3: #f1ecf6;
+  --bg-4: #f5f1f9;
+  --bg-inset: #d4c8df;
+
+  /* fg: dark violet-black → deep violet → mid violet → pale lavender.
+     fg-3 ~4.6:1 on bg-2 (hits AA). */
+  --fg-0: #241834;
+  --fg-1: #3e2e50;
+  --fg-2: #6c5e80;
+  --fg-3: #9a8eaa;
+  --fg-mark: #000000;
+
+  --txt-engrave: 0 1px 1px rgba(255, 255, 255, 0.65);
+
+  --edge-bright: rgba(255, 255, 255, 0.75);
+  --edge-mid: rgba(255, 255, 255, 0.4);
+  --edge-deep: rgba(60, 40, 90, 0.22);
+  --edge-engrave: rgba(60, 40, 90, 0.14);
+
+  /* Accent — deep violet, same family as the ground (per design spec:
+     "background a soft tone, accent the same hue one stop deeper"). */
+  --accent: #7048a4;
+  --accent-dim: #503078;
+  --accent-bright: #8a64bc;
+
+  /* Signal-info pulled deeper toward navy (#2a5a8a) so it doesn't blend
+     with the cool-violet ground. signal-good shifted slightly toward
+     teal-green to read clean on a cool base. */
+  --signal-good: #3a8a72;
+  --signal-warn: #a06a18;
+  --signal-bad: #a83a30;
+  --signal-info: #2a5a8a;
+
+  --shadow-card:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 3px rgba(60, 40, 90, 0.08);
+  --shadow-inset:
+    inset 0 1px 0 var(--edge-deep),
+    inset 0 -1px 0 var(--edge-bright),
+    inset 0 1px 3px rgba(60, 40, 90, 0.12);
+  --shadow-button:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 1px 2px rgba(60, 40, 90, 0.1);
+
+  --grid-line: rgba(60, 40, 90, 0.04);
+  --grid-line-strong: rgba(60, 40, 90, 0.08);
+
+  /* Map — land slightly deeper lavender than bg-2 so continents read. */
+  --map-land: #ddd0eb;
+  --map-land-hover: #cdbcdf;
+  --map-border: rgba(60, 40, 90, 0.30);
+  --map-graticule: rgba(60, 40, 90, 0.10);
 }
 
 /* ─── Base ─── */

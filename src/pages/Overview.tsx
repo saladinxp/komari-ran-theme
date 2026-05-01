@@ -24,7 +24,7 @@ import { contentFs } from '@/utils/fontScale'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
 import { useSearchQuery, nodeMatchesQuery } from '@/hooks/useSearchQuery'
 
-type Theme = 'ran-night' | 'ran-mist'
+type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type ViewMode = 'grid' | 'row'
 type Filter = 'all' | 'on' | 'warn' | 'off'

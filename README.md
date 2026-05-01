@@ -3,7 +3,7 @@
 > 精密金工质感的 Komari 探针面板主题
 > Precision-machined hi-fi gear, rendered as a server monitoring panel.
 
-[![version](https://img.shields.io/badge/version-1.0.9-c8a86c?style=flat-square)](https://github.com/saladinxp/komari-ran-theme/releases)
+[![version](https://img.shields.io/badge/version-1.1.0-c8a86c?style=flat-square)](https://github.com/saladinxp/komari-ran-theme/releases)
 [![demo](https://img.shields.io/badge/demo-obsr.net-2d6a4f?style=flat-square)](https://obsr.net)
 [![license](https://img.shields.io/badge/license-MIT-666?style=flat-square)](#许可)
 
@@ -117,7 +117,7 @@ Komari 后台 → 主题管理 → 岚 → 配置面板,支持以下后台开关
 |---|---|---|---|
 | `default_theme` | `ran-night` / `ran-mist` | `ran-night` | 首次加载默认主题,墨石(深) / 雾色(浅);用户切换后浏览器记忆偏好 |
 | `font_scale` | `standard` / `large` / `xlarge` | `standard` | 字体大小三档,内容字按 1× / 1.18× / 1.36× 缩放;装饰字与布局尺寸不变 |
-| `version_tag` | string | `v1.0.9` | 页脚显示的版本标识 |
+| `version_tag` | string | `v1.1.0` | 页脚显示的版本标识 |
 
 ### ◇ HUD // 浮卡 + 流量
 

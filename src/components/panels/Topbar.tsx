@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Etch } from '@/components/atoms/Etch'
 import { SerialPlate } from '@/components/atoms/SerialPlate'
 import { StatusDot } from '@/components/atoms/StatusDot'
-import { Segmented } from '@/components/atoms/Segmented'
+import { ThemePicker } from '@/components/atoms/ThemePicker'
 import { Icon } from '@/components/atoms/icons'
 import { useIsMobile, useIsNarrow } from '@/hooks/useMediaQuery'
 import { useSearchQuery, nodeMatchesQuery } from '@/hooks/useSearchQuery'
 import { contentFs } from '@/utils/fontScale'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 
-type Theme = 'ran-night' | 'ran-mist'
+type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 
 interface Props {
@@ -430,14 +430,7 @@ export function Topbar({
           )
         )}
 
-        <Segmented
-          options={[
-            { value: 'ran-night', label: isMobile ? 'N' : 'NIGHT' },
-            { value: 'ran-mist', label: isMobile ? 'M' : 'MIST' },
-          ]}
-          value={theme}
-          onChange={(v) => onTheme(v as Theme)}
-        />
+        <ThemePicker value={theme} onChange={(v) => onTheme(v)} />
       </div>
 
       {/* Mobile search panel — full-width drop-down below the header. */}

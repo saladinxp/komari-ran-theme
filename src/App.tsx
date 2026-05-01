@@ -14,14 +14,14 @@ import { useRoute } from '@/router/route'
 import { applyFontScale, parseFontScale } from '@/utils/fontScale'
 import { setBpsUnitMode, parseBpsUnitMode } from '@/utils/format'
 
-type Theme = 'ran-night' | 'ran-mist'
+type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 
 const THEME_KEY = 'ran.theme'
 
 function loadTheme(): Theme {
   try {
     const v = localStorage.getItem(THEME_KEY)
-    if (v === 'ran-night' || v === 'ran-mist') return v
+    if (v === 'ran-night' || v === 'ran-mist' || v === 'ran-ember' || v === 'ran-sakura' || v === 'ran-lavender') return v
   } catch {
     /* ignore */
   }

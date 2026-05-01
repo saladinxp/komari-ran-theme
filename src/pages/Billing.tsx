@@ -26,7 +26,7 @@ import {
 } from '@/utils/billing'
 import { contentFs } from '@/utils/fontScale'
 
-type Theme = 'ran-night' | 'ran-mist'
+type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
 type DisplayCode = 'USD' | 'CNY' | 'EUR' | 'GBP' | 'NATIVE'
 
@@ -299,7 +299,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v1.0.9" config={config} />
+          <Footer version="v1.1.0" config={config} />
         </div>
       </div>
     )
@@ -844,7 +844,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v1.0.9" config={config} />
+        <Footer version="v1.1.0" config={config} />
       </div>
     </div>
   )

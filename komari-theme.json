@@ -1,8 +1,8 @@
 {
   "name": "Ran · 岚",
   "short": "ran",
-  "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 双主题(墨石深 / 雾色浅)。Inspired by precision-machined hi-fi gear.",
-  "version": "1.0.9",
+  "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 多主题(墨石深 / 雾色浅 / 烬枣红 / 樱粉浅 / 薰衣草浅)。Inspired by precision-machined hi-fi gear.",
+  "version": "1.1.0",
   "author": "Miuler",
   "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
@@ -18,9 +18,9 @@
         "key": "default_theme",
         "name": "[ MODE ] 默认主题",
         "type": "select",
-        "options": "ran-night,ran-mist",
+        "options": "ran-night,ran-mist,ran-ember,ran-sakura,ran-lavender",
         "default": "ran-night",
-        "help": "页面首次加载时的默认主题。ran-night = 墨石(深色),ran-mist = 雾色(浅色)。用户切换后浏览器会记住偏好。"
+        "help": "页面首次加载时的默认主题。ran-night = 墨石(深),ran-mist = 雾色(浅),ran-ember = 烬(深 · 枣红),ran-sakura = 樱(浅 · 樱粉),ran-lavender = 薰(浅 · 薰衣草)。用户切换后浏览器会记住偏好。"
       },
       {
         "key": "font_scale",
@@ -58,7 +58,7 @@
         "key": "version_tag",
         "name": "[ SYS.VER ] 版本号",
         "type": "string",
-        "default": "v1.0.9",
+        "default": "v1.1.0",
         "help": "页脚显示的版本标识"
       },
       {

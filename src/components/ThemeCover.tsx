@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 
 interface Props {
   /** When set, applies the data-theme directly to this card. */
-  theme?: 'ran-night' | 'ran-mist'
+  theme?: 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
   width?: number
   height?: number
 }
