@@ -57,7 +57,7 @@ function BeianEntry({ text, url }: { text: string; url: string }) {
   return <span>{text}</span>
 }
 
-export function Footer({ version = 'v1.0.6', config }: FooterProps) {
+export function Footer({ version = 'v1.0.7', config }: FooterProps) {
   const ts = config?.theme_settings
   const icpText = readStr(ts, 'icp_text')
   const icpUrl = readStr(ts, 'icp_url')

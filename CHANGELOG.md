@@ -2,6 +2,14 @@
 
 > Notable changes to 岚 (Ran) — Komari probe theme.
 
+## v1.0.7 — 2026-05
+
+### 打磨 / Polish
+
+- **Hub 顶部新增状态铭牌带** — 在节点切换条之下、cockpit 主区之上,新增 3 联状态铭牌(NODE TIER / OPERATIONAL STATE / UPLINK STATUS)。所有数值从节点状态实时派生,不发明假指标。NODE TIER 从用户在 Komari 后台给节点打的 `tier-X` / `tier:X` 标签解析(没打就显示 `—`);OPERATIONAL STATE 综合 online + 资源占用得出 STABLE / DEGRADED / CRITICAL / OFFLINE 四档;UPLINK STATUS 跟 ws 连接状态(ACTIVE / LINKING / LOST)。窄屏自动 wrap 多行
+- **Hub Resources 卡:圆环仪表盘 → 横向铭牌进度条** — 原 RES·03 区是 2x2 RadialGauge(CPU / MEM / DISK / LOAD 各一个圆环),改成 4 行紧凑横向布局:左侧标签圆 + 数值 + 进度条 + 详情(如内存的 `xx GB / yy GB`)。跟左侧栏 SYS·01 / Allocation 卡的克制风格统一,纵向占位减小
+- **Hub Alert 卡:Recent Alerts → Alert Center,加三联大计数面板** — 卡名从 "Recent Alerts" 改 "Alert Center",卡顶部新增 CRITICAL / WARNING / INFO 三联大数字计数(基于 `deriveAlertsForNode` 派生),大字号 tabular-nums,按级别配色。0 时灰色,有值时彩色。下方原 AlertsList 保留
+
 ## v1.0.6 — 2026-04
 
 ### 新功能

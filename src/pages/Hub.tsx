@@ -25,7 +25,6 @@ import { Segmented } from '@/components/atoms/Segmented'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { StatusBadge } from '@/components/atoms/StatusBadge'
 import { AreaChart } from '@/components/charts/AreaChart'
-import { RadialGauge } from '@/components/charts/RadialGauge'
 import { PingChart } from '@/components/charts/PingChart'
 import type { KomariNode, KomariPublicConfig, KomariRecord } from '@/types/komari'
 import type { PingHistory } from '@/api/client'
@@ -207,6 +206,253 @@ function deriveAlertsForNode(
 /* ─────────────────────────────────────────────────────────────────────────
    Sub-components
    ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * StatusPlate — 顶部 3 联状态铭牌(NODE TIER / OPERATIONAL STATE / UPLINK STATUS)。
+ * 精密金工质感:多层 inset shadow,dot 指示符,等宽字数值。
+ * 数据全部从节点状态派生,不发明假指标。
+ */
+function StatusPlate({
+  label,
+  value,
+  dot,
+}: {
+  label: string
+  value: React.ReactNode
+  dot?: 'good' | 'warn' | 'bad' | null
+}) {
+  const dotColor =
+    dot === 'good'
+      ? 'var(--signal-good)'
+      : dot === 'warn'
+        ? 'var(--signal-warn)'
+        : dot === 'bad'
+          ? 'var(--signal-bad)'
+          : null
+  return (
+    <div
+      style={{
+        padding: '8px 14px',
+        background: 'var(--bg-1)',
+        border: '1px solid var(--edge-deep)',
+        boxShadow:
+          'inset 0 1px 0 var(--edge-bright), inset 0 -1px 0 var(--edge-engrave)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        minWidth: 130,
+        flex: '0 0 auto',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: contentFs(8),
+          letterSpacing: '0.18em',
+          color: 'var(--fg-2)',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontFamily: 'var(--font-mono)',
+          fontSize: contentFs(13),
+          fontWeight: 500,
+          color: 'var(--fg-0)',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {dotColor && (
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: dotColor,
+              boxShadow: `0 0 6px ${dotColor}`,
+              display: 'inline-block',
+            }}
+          />
+        )}
+        {value}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * ResourceRow — 横向铭牌进度条(参考图风格,替代 RadialGauge)。
+ * 紧凑、克制,适合左侧栏在不占大空间下展示 4 个核心指标。
+ */
+function ResourceRow({
+  label,
+  value,
+  pct,
+  detail,
+  status,
+}: {
+  label: string
+  value: string
+  pct: number
+  detail?: string
+  status?: 'good' | 'warn' | 'bad'
+}) {
+  const fillColor =
+    status === 'bad'
+      ? 'var(--signal-bad)'
+      : status === 'warn'
+        ? 'var(--signal-warn)'
+        : 'var(--accent-bright)'
+  const clampedPct = Math.max(0, Math.min(100, pct))
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '32px 44px 1fr auto',
+        alignItems: 'center',
+        gap: 8,
+        padding: '7px 0',
+        borderBottom: '1px dashed var(--edge-engrave)',
+      }}
+    >
+      <div
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          border: '1px solid var(--edge-engrave)',
+          background: 'var(--bg-2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'var(--font-mono)',
+          fontSize: contentFs(7),
+          color: 'var(--fg-2)',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: contentFs(11),
+          fontWeight: 500,
+          color: 'var(--fg-0)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          height: 4,
+          background: 'var(--bg-inset)',
+          border: '1px solid var(--edge-engrave)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: `${clampedPct}%`,
+            background: fillColor,
+            boxShadow: `0 0 4px ${fillColor}`,
+            transition: 'width 0.4s ease',
+          }}
+        />
+      </div>
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: contentFs(9),
+          color: 'var(--fg-2)',
+          fontVariantNumeric: 'tabular-nums',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {detail ?? ''}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * AlertCounts — CRITICAL / WARNING / INFO 三联大计数,放在 ALERT CENTER 卡顶部。
+ */
+function AlertCounts({
+  critical,
+  warning,
+  info,
+}: {
+  critical: number
+  warning: number
+  info: number
+}) {
+  const cells: { num: number; label: string; color: string }[] = [
+    { num: critical, label: 'CRITICAL', color: 'var(--signal-bad)' },
+    { num: warning, label: 'WARNING', color: 'var(--signal-warn)' },
+    { num: info, label: 'INFO', color: 'var(--fg-2)' },
+  ]
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: 6,
+        padding: '6px 12px 8px',
+      }}
+    >
+      {cells.map((c) => (
+        <div
+          key={c.label}
+          style={{
+            padding: '12px 6px',
+            background: 'var(--bg-2)',
+            border: '1px solid var(--edge-engrave)',
+            boxShadow: 'inset 0 1px 0 var(--edge-bright)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: contentFs(26),
+              fontWeight: 500,
+              fontVariantNumeric: 'tabular-nums',
+              color: c.num > 0 ? c.color : 'var(--fg-3)',
+              lineHeight: 1,
+            }}
+          >
+            {c.num}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: contentFs(8),
+              letterSpacing: '0.15em',
+              color: 'var(--fg-2)',
+            }}
+          >
+            {c.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /** A row of "label : value" lines, minimal spacing, for system info blocks. */
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -696,6 +942,19 @@ export function HubPage({
     [node, record],
   )
 
+  // CRITICAL / WARNING / INFO 三联计数 — 给 ALERT CENTER 卡顶部的大数字面板用。
+  const alertCounts = useMemo(() => {
+    let critical = 0,
+      warning = 0,
+      info = 0
+    for (const a of alerts) {
+      if (a.level === 'bad') critical++
+      else if (a.level === 'warn') warning++
+      else if (a.level === 'info') info++
+    }
+    return { critical, warning, info }
+  }, [alerts])
+
   // Global stats for the topbar.
   const globalOnline = useMemo(() => {
     let n = 0
@@ -780,6 +1039,40 @@ export function HubPage({
       : Math.max(record?.cpu ?? 0, memPct, diskPct) > 65
         ? 'warn'
         : 'good'
+
+  // Status plate derivations — 顶部 3 联铭牌的数据来源,全部派生,不发明假指标。
+  // NODE TIER 从 node.tags 找以 "tier-" 或 "tier:" 开头的 tag(用户在 Komari admin
+  // 给节点打的标签)。Komari tag 是扁平字符串列表,没有 key/value 结构。
+  const tierTag = labels.raw.find((l) =>
+    /^tier[-:]/i.test(l.value),
+  )?.value
+  const nodeTierText = tierTag
+    ? tierTag.replace(/^tier[-:]\s*/i, 'TIER-').toUpperCase()
+    : '—'
+
+  const opStateText: string = !online
+    ? 'OFFLINE'
+    : resStatus === 'bad'
+      ? 'CRITICAL'
+      : resStatus === 'warn'
+        ? 'DEGRADED'
+        : 'STABLE'
+  const opStateDot: 'good' | 'warn' | 'bad' = !online
+    ? 'bad'
+    : resStatus === 'bad'
+      ? 'bad'
+      : resStatus === 'warn'
+        ? 'warn'
+        : 'good'
+
+  const uplinkText: string =
+    conn === 'open'
+      ? 'ACTIVE'
+      : conn === 'connecting'
+        ? 'LINKING'
+        : 'LOST'
+  const uplinkDot: 'good' | 'warn' | 'bad' =
+    conn === 'open' ? 'good' : conn === 'connecting' ? 'warn' : 'bad'
 
   const subtitle = `${
     labels.raw.length > 0 ? labels.raw.map((l) => l.value).join(' · ') + ' · ' : ''
@@ -900,6 +1193,23 @@ export function HubPage({
           </a>
         </div>
 
+        {/* Status plates strip — 3 联铭牌(NODE TIER / OPERATIONAL STATE / UPLINK STATUS)。
+            放在 command bar 之下、cockpit 主区之上。窄屏 wrap 成多行。 */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            padding: '10px 20px',
+            background: 'var(--bg-0)',
+            borderBottom: '1px solid var(--edge-engrave)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <StatusPlate label="NODE TIER" value={nodeTierText} />
+          <StatusPlate label="OPERATIONAL STATE" value={opStateText} dot={opStateDot} />
+          <StatusPlate label="UPLINK STATUS" value={uplinkText} dot={uplinkDot} />
+        </div>
+
         <main
           ref={mainRef}
           className="app-main"
@@ -969,42 +1279,48 @@ export function HubPage({
               </CardFrame>
 
               <CardFrame title="Resources" code="RES · 03">
-                <div
-                  style={{
-                    padding: '12px 8px',
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 8,
-                    placeItems: 'center',
-                  }}
-                >
-                  <RadialGauge
-                    value={online ? record?.cpu ?? 0 : 0}
-                    size={108}
+                <div style={{ padding: '8px 12px 10px' }}>
+                  <ResourceRow
                     label="CPU"
-                    unit="%"
+                    value={online ? `${(record?.cpu ?? 0).toFixed(1)}%` : '—'}
+                    pct={online ? record?.cpu ?? 0 : 0}
+                    detail={`${node.cpu_cores ?? '—'} cores`}
                     status={resStatus}
                   />
-                  <RadialGauge
-                    value={online ? memPct : 0}
-                    size={108}
+                  <ResourceRow
                     label="MEM"
-                    unit="%"
+                    value={online && record?.memory_total ? `${memPct.toFixed(1)}%` : '—'}
+                    pct={online ? memPct : 0}
+                    detail={
+                      online && record?.memory_used != null && record?.memory_total
+                        ? `${formatBytes(record.memory_used, 1)} / ${formatBytes(record.memory_total, 1)}`
+                        : ''
+                    }
                     status={memPct > 85 ? 'bad' : memPct > 65 ? 'warn' : 'good'}
                   />
-                  <RadialGauge
-                    value={online ? diskPct : 0}
-                    size={108}
+                  <ResourceRow
                     label="DISK"
-                    unit="%"
+                    value={online && record?.disk_total ? `${diskPct.toFixed(1)}%` : '—'}
+                    pct={online ? diskPct : 0}
+                    detail={
+                      online && record?.disk_used != null && record?.disk_total
+                        ? `${formatBytes(record.disk_used, 1)} / ${formatBytes(record.disk_total, 1)}`
+                        : ''
+                    }
                     status={diskPct > 85 ? 'bad' : diskPct > 65 ? 'warn' : 'good'}
                   />
-                  <RadialGauge
-                    value={online ? record?.load1 ?? 0 : 0}
-                    max={Math.max(8, (node.cpu_cores ?? 1) * 2)}
-                    size={108}
+                  <ResourceRow
                     label="LOAD"
-                    unit=""
+                    value={online ? (record?.load1 ?? 0).toFixed(2) : '—'}
+                    pct={
+                      online
+                        ? Math.min(
+                            100,
+                            ((record?.load1 ?? 0) / Math.max(8, (node.cpu_cores ?? 1) * 2)) * 100,
+                          )
+                        : 0
+                    }
+                    detail={`1m / ${(record?.load1 ?? 0).toFixed(2)}`}
                     status={
                       (record?.load1 ?? 0) > (node.cpu_cores ?? 1) * 1.5
                         ? 'bad'
@@ -1248,7 +1564,7 @@ export function HubPage({
             {layoutMode === 'wide' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <CardFrame
-                  title="Recent Alerts"
+                  title="Alert Center"
                   code="ALT · 09"
                   action={
                     <StatusBadge
@@ -1257,6 +1573,7 @@ export function HubPage({
                     />
                   }
                 >
+                  <AlertCounts {...alertCounts} />
                   <AlertsList alerts={alerts} />
                 </CardFrame>
 
@@ -1288,7 +1605,7 @@ export function HubPage({
               }}
             >
               <CardFrame
-                title="Recent Alerts"
+                title="Alert Center"
                 code="ALT · 09"
                 action={
                   <StatusBadge
@@ -1297,6 +1614,7 @@ export function HubPage({
                   />
                 }
               >
+                <AlertCounts {...alertCounts} />
                 <AlertsList alerts={alerts} />
               </CardFrame>
 

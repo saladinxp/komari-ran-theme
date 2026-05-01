@@ -299,7 +299,7 @@ export function BillingPage({
               </div>
             </CardFrame>
           </main>
-          <Footer version="v1.0.6" config={config} />
+          <Footer version="v1.0.7" config={config} />
         </div>
       </div>
     )
@@ -844,7 +844,7 @@ export function BillingPage({
           </div>
         </main>
 
-        <Footer version="v1.0.6" config={config} />
+        <Footer version="v1.0.7" config={config} />
       </div>
     </div>
   )
