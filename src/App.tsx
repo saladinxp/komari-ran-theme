@@ -119,7 +119,7 @@ export default function App() {
   )
   const globalHistory = useGlobalHistory(realUuids, 1)
 
-  const siteName = config?.site_name ?? '岚 · Komari'
+  const siteName = (config?.theme_settings?.site_name as string | undefined) || config?.sitename || '岚 · Komari'
 
   // Pick a default uuid for the Hub sidebar entry. Prefer the first online
   // node so the cockpit lands on something interesting. Fall back to the

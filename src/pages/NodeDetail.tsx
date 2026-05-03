@@ -26,7 +26,7 @@ import {
 import { bucketLoadHistory, hasLoadData } from '@/utils/load'
 import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import type { PingTask } from '@/api/client'
-import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
+import { getRecordRetentionHours } from '@/utils/retention'
 import { contentFs } from '@/utils/fontScale'
 import { parseMetricsDisplay, resolveMetricsForm } from '@/utils/metricsDisplay'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
@@ -35,7 +35,7 @@ import { useMobileDrawer, useIsMobile } from '@/hooks/useMediaQuery'
 
 type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 type Conn = 'connecting' | 'open' | 'closed' | 'error' | 'idle'
-type WindowKey = '1h' | '6h' | '24h' | '7d'
+type WindowKey = string
 
 interface WindowSpec {
   key: WindowKey
@@ -48,40 +48,37 @@ interface WindowSpec {
   titleSuffix: string
 }
 
-const WINDOWS: WindowSpec[] = [
-  {
-    key: '1h',
-    label: '1H',
-    hours: 1,
-    buckets: 60,
-    xLabels: ['-1h', '-50m', '-40m', '-30m', '-20m', '-10m', 'now'],
-    titleSuffix: '1H',
-  },
-  {
-    key: '6h',
-    label: '6H',
-    hours: 6,
-    buckets: 72,
-    xLabels: ['-6h', '-5h', '-4h', '-3h', '-2h', '-1h', 'now'],
-    titleSuffix: '6H',
-  },
-  {
-    key: '24h',
-    label: '24H',
-    hours: 24,
-    buckets: 96,
-    xLabels: ['-24h', '-20h', '-16h', '-12h', '-8h', '-4h', 'now'],
-    titleSuffix: '24H',
-  },
-  {
-    key: '7d',
-    label: '7D',
-    hours: 24 * 7,
-    buckets: 84,
-    xLabels: ['-7d', '-6d', '-5d', '-4d', '-3d', '-2d', '-1d'],
-    titleSuffix: '7D',
-  },
-]
+function fWindowLabel(hours: number): string {
+  if (hours < 24) return `${hours}H`
+  const d = Math.round(hours / 24)
+  return `${d}D`
+}
+
+function fXLabels(hours: number): string[] {
+  return Array.from({ length: 7 }, (_, i) => {
+    if (i === 6) return 'now'
+    const remaining = hours * (1 - i / 6)
+    if (remaining < 24) return `-${Math.round(remaining)}h`
+    return `-${Math.round(remaining / 24)}d`
+  })
+}
+
+function buildWindows(retentionHours: number): WindowSpec[] {
+  const candidates = [1, 6, 24, 24 * 7, 24 * 30]
+  const ceil = Math.floor(retentionHours)
+  if (!candidates.includes(ceil) && ceil > 1) candidates.push(ceil)
+  candidates.sort((a, b) => a - b)
+  const filtered = candidates.filter((h) => h <= retentionHours)
+  if (filtered.length === 0) filtered.push(1)
+  return filtered.map((h) => ({
+    key: `${h}h`,
+    label: fWindowLabel(h),
+    hours: h,
+    buckets: Math.min(120, Math.max(60, Math.round(h * 2))),
+    xLabels: fXLabels(h),
+    titleSuffix: fWindowLabel(h),
+  }))
+}
 
 interface Props {
   uuid: string
@@ -120,13 +117,13 @@ export function NodeDetailPage({
   // Filter windows by Komari record retention (record_preserve_time, in hours).
   const retentionHours = getRecordRetentionHours(config)
   const availableWindows = useMemo(
-    () => filterWindowsByRetention(WINDOWS, retentionHours),
+    () => buildWindows(retentionHours),
     [retentionHours],
   )
   const activeWindowKey: WindowKey = availableWindows.some((w) => w.key === windowKey)
     ? windowKey
     : availableWindows[0].key
-  const windowSpec = WINDOWS.find((w) => w.key === activeWindowKey) ?? WINDOWS[0]
+  const windowSpec = availableWindows.find((w) => w.key === activeWindowKey) ?? availableWindows[0]
   const history = useNodeHistory(uuid, windowSpec.hours)
   const [tab, setTab] = useState<'overview' | 'latency'>('overview')
 

@@ -163,7 +163,7 @@ export default function MapApp() {
     return firstOnline?.uuid ?? displayNodes[0]?.uuid
   }, [displayNodes, displayRecords])
 
-  const siteName = config?.site_name ?? '岚 · Komari'
+  const siteName = (config?.theme_settings?.site_name as string | undefined) || config?.sitename || '岚 · Komari'
   const subtitle = `${displayNodes.length} NODES · ${regionCount} REGIONS · GEO TRACKING`
 
   // embed 模式短路:只渲染地图本体,无 sidebar/topbar/footer/底部 stats。
@@ -237,7 +237,7 @@ export default function MapApp() {
     >
       <Sidebar
         active="map"
-        version="v1.1.0"
+        version="v1.1.1"
         hubTargetUuid={hubTargetUuid}
         crossPage
         mobileOpen={drawer.open}
@@ -414,7 +414,7 @@ export default function MapApp() {
           </div>
         </main>
 
-        <Footer version="v1.1.0" config={config} />
+        <Footer version="v1.1.1" config={config} />
       </div>
     </div>
   )
