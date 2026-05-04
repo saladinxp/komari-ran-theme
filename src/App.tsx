@@ -17,16 +17,21 @@ import { setBpsUnitMode, parseBpsUnitMode } from '@/utils/format'
 type Theme = 'ran-night' | 'ran-mist' | 'ran-ember' | 'ran-sakura' | 'ran-lavender'
 
 const THEME_KEY = 'ran.theme'
+/** Set to '1' when the user has explicitly picked a theme via the ThemePicker. */
+const THEME_USER_SET_KEY = 'ran.theme.user'
+
+const VALID_THEMES: Theme[] = ['ran-night', 'ran-mist', 'ran-ember', 'ran-sakura', 'ran-lavender']
+
+function isValidTheme(v: unknown): v is Theme {
+  return VALID_THEMES.includes(v as Theme)
+}
 
 function loadTheme(): Theme {
   try {
     const v = localStorage.getItem(THEME_KEY)
-    if (v === 'ran-night' || v === 'ran-mist' || v === 'ran-ember' || v === 'ran-sakura' || v === 'ran-lavender') return v
+    if (isValidTheme(v)) return v
   } catch {
     /* ignore */
-  }
-  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-    return 'ran-mist'
   }
   return 'ran-night'
 }
@@ -54,6 +59,10 @@ if (
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme)
+  const handleThemeChange = (t: Theme) => {
+    try { localStorage.setItem(THEME_USER_SET_KEY, '1') } catch { /* ignore */ }
+    setTheme(t)
+  }
   const route = useRoute()
   const { nodes, records, config, conn, ping, lastUpdate } = useKomari()
 
@@ -65,6 +74,15 @@ export default function App() {
       /* ignore */
     }
   }, [theme])
+
+  // 后台 default_theme — 仅在用户从未手动选过主题时生效。
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(THEME_USER_SET_KEY)) return
+    } catch { /* ignore */ }
+    const raw = config?.theme_settings?.default_theme
+    if (isValidTheme(raw)) setTheme(raw)
+  }, [config?.theme_settings?.default_theme])
 
   // 字号档位 — 跟随 Komari 后台 theme_settings.font_scale 实时变化。
   // 写到 <html> 上的 CSS 变量,各组件通过 contentFs() 读取。
@@ -145,7 +163,7 @@ export default function App() {
             nodes={displayNodes}
             records={displayRecords}
             theme={theme}
-            onTheme={setTheme}
+            onTheme={handleThemeChange}
             siteName={siteName}
             lastUpdate={lastUpdate}
             conn={conn}
@@ -165,7 +183,7 @@ export default function App() {
             nodes={displayNodes}
             records={displayRecords}
             theme={theme}
-            onTheme={setTheme}
+            onTheme={handleThemeChange}
             siteName={siteName}
             lastUpdate={lastUpdate}
             conn={conn}
@@ -179,7 +197,7 @@ export default function App() {
           nodes={displayNodes}
           records={displayRecords}
           theme={theme}
-          onTheme={setTheme}
+          onTheme={handleThemeChange}
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
@@ -195,7 +213,7 @@ export default function App() {
           nodes={displayNodes}
           records={displayRecords}
           theme={theme}
-          onTheme={setTheme}
+          onTheme={handleThemeChange}
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
@@ -221,7 +239,7 @@ export default function App() {
           nodes={displayNodes}
           records={displayRecords}
           theme={theme}
-          onTheme={setTheme}
+          onTheme={handleThemeChange}
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
@@ -237,7 +255,7 @@ export default function App() {
           nodes={displayNodes}
           records={displayRecords}
           theme={theme}
-          onTheme={setTheme}
+          onTheme={handleThemeChange}
           siteName={siteName}
           lastUpdate={lastUpdate}
           conn={conn}
@@ -255,7 +273,7 @@ export default function App() {
       nodes={displayNodes}
       records={displayRecords}
       theme={theme}
-      onTheme={setTheme}
+      onTheme={handleThemeChange}
       siteName={siteName}
       lastUpdate={lastUpdate}
       conn={conn}
