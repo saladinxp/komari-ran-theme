@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && BUILD_TARGET=map vite build && cp og.png dist/og.png && sed -i 's|__OG_IMAGE__|https://obsr.net/og.png|g' dist/index.html",
+    "build": "tsc -b && vite build && BUILD_TARGET=map vite build && cp og.png dist/og.png && sed -i 's|__OG_IMAGE__|https://obsr.net/og.png|g' dist/index.html && sed -i 's|__OG_URL__|https://obsr.net|g' dist/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
