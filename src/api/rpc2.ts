@@ -98,6 +98,35 @@ async function queryMetricsRaw(params: Record<string, unknown>): Promise<MetricQ
 }
 
 /**
+ * Per-task latency distribution, computed server-side (Komari 1.2.6+).
+ *
+ * The mean alone hides the thing that actually degrades a link: a route with a
+ * 46ms average and a 312ms p99 feels broken, while a steady 50ms does not.
+ * `p99_p50_ratio` is that jitter, already reduced to one number.
+ */
+export interface PingQualityStat {
+  task_id?: string | number
+  name?: string
+  tags?: Record<string, string>
+  total?: number
+  valid?: number
+  loss?: number
+  min?: number
+  max?: number
+  avg?: number
+  latest?: number
+  p50?: number
+  p99?: number
+  stddev?: number
+  p99_p50_ratio?: number
+}
+
+export async function fetchPingQuality(uuid: string, hours = 24): Promise<PingQualityStat[]> {
+  const r = await rpc2<{ stats?: PingQualityStat[] }>('public:getPingMetricStats', { uuid, hours })
+  return r.stats ?? []
+}
+
+/**
  * Probe support once per page load. The legacy endpoints answer on every
  * version, so we cannot tell old from new by their success alone — we ask the
  * metric store directly and cache the verdict.

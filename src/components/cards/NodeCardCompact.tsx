@@ -116,7 +116,7 @@ function NodeCardCompact_({ node, record, netSpark = [], pingSpark = [], pingLos
 
   return (
     <div
-      className="precision-card"
+      className="precision-card liftable"
       style={{
         padding: 12,
         display: 'flex',
@@ -127,6 +127,16 @@ function NodeCardCompact_({ node, record, netSpark = [], pingSpark = [], pingLos
         opacity: offline ? 0.7 : 1,
       }}
     >
+      {/* Status hairline along the top bevel — brightest at centre. */}
+      <div
+        className="status-sweep"
+        style={{
+          background: `linear-gradient(90deg, transparent, var(--signal-${
+            status === 'good' ? 'good' : status === 'warn' ? 'warn' : 'bad'
+          }), transparent)`,
+        }}
+      />
+
       {/* header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: 1 }}>
@@ -144,7 +154,8 @@ function NodeCardCompact_({ node, record, netSpark = [], pingSpark = [], pingLos
               </span>
             )}
             <span
-              style={{
+              className="engraved"
+          style={{
                 fontSize: contentFs(13),
                 fontWeight: 600,
                 letterSpacing: '-0.01em',

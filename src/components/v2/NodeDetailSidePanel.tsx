@@ -21,6 +21,7 @@ import { useState } from 'react'
 import type { KomariNode, KomariRecord } from '@/types/komari'
 import { Etch } from '@/components/atoms/Etch'
 import { contentFs } from '@/utils/fontScale'
+import { ReadoutGrid } from '@/components/atoms/ReadoutGrid'
 import {
   daysUntil,
   formatBps,
@@ -74,7 +75,17 @@ function ProgressRow({
   const displayPct = valid ? Math.min(100, Math.max(0, pct)).toFixed(0) : '—'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        // A compartment of the shared plate: it paints its own face so the
+        // 1px seam between rows shows the frame colour through.
+        background: 'var(--bg-2)',
+        padding: '8px 10px',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -392,7 +403,22 @@ export function NodeDetailSidePanel({ node, record, width = 300 }: Props) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* One recessed plate, subdivided by hairline seams — the same
+            vocabulary as the readout cluster below. Three gauges floating
+            with nothing but whitespace between them read as a list; enclosed
+            in a shared frame they read as one instrument. */}
+        <div
+          style={{
+            display: 'grid',
+            gap: 1,
+            background: 'var(--edge-engrave)',
+            border: 'var(--hairline) solid var(--edge-engrave)',
+            borderRadius: 'var(--radius-sm)',
+            // Depth from shading, not from a darker fill — see ReadoutGrid.
+            boxShadow: 'var(--shadow-inset)',
+            overflow: 'hidden',
+          }}
+        >
           <ProgressRow
             label="CPU"
             pct={record?.cpu}
@@ -418,84 +444,40 @@ export function NodeDetailSidePanel({ node, record, width = 300 }: Props) {
           />
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 8,
-            paddingTop: 8,
-            borderTop: '1px solid var(--edge-engrave)',
-          }}
-        >
-          <div>
-            <Etch>↑ INBOUND</Etch>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontVariantNumeric: 'tabular-nums',
-                fontSize: contentFs(12),
-                color: 'var(--accent)',
-                fontWeight: 500,
-                marginTop: 2,
-              }}
-            >
-              {record?.network_tx ? formatBps(record.network_tx) : '—'}
-            </div>
-          </div>
-          <div>
-            <Etch>↓ OUTBOUND</Etch>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontVariantNumeric: 'tabular-nums',
-                fontSize: contentFs(12),
-                color: 'var(--signal-good)',
-                fontWeight: 500,
-                marginTop: 2,
-              }}
-            >
-              {record?.network_rx ? formatBps(record.network_rx) : '—'}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: 8,
-          }}
-        >
-          <div>
-            <Etch>UPTIME</Etch>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: contentFs(11),
-                color: 'var(--fg-1)',
-                marginTop: 2,
-              }}
-            >
-              {fmtUptimeShort(record?.uptime)}
-            </div>
-          </div>
-          <div>
-            <Etch>EXPIRES</Etch>
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: contentFs(11),
-                color: expColor,
-                marginTop: 2,
-              }}
-            >
-              {fmtIsoDate(node.expired_at)}{' '}
-              {typeof daysToExpire === 'number' && (
-                <span style={{ color: 'var(--fg-3)' }}>({daysToExpire}d)</span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* One 2x2 cluster instead of two loose grids — the four figures a
+            reader actually scans together, framed together. */}
+        <ReadoutGrid
+          dense
+          items={[
+            {
+              label: '↑ INBOUND',
+              value: record?.network_tx ? formatBps(record.network_tx) : '—',
+              color: 'var(--accent)',
+            },
+            {
+              label: '↓ OUTBOUND',
+              value: record?.network_rx ? formatBps(record.network_rx) : '—',
+              color: 'var(--signal-good)',
+            },
+            {
+              label: 'UPTIME',
+              value: fmtUptimeShort(record?.uptime),
+              color: 'var(--fg-1)',
+            },
+            {
+              label: 'EXPIRES',
+              value: (
+                <>
+                  {fmtIsoDate(node.expired_at)}{' '}
+                  {typeof daysToExpire === 'number' && (
+                    <span style={{ color: 'var(--fg-3)', fontWeight: 400 }}>({daysToExpire}d)</span>
+                  )}
+                </>
+              ),
+              color: expColor,
+            },
+          ]}
+        />
       </div>
 
       {/* Footer */}

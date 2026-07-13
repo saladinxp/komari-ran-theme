@@ -39,7 +39,13 @@ export function StatusDot({ status = 'good', size = 8, halo = true, pulse = fals
           inset: 0,
           borderRadius: '50%',
           background: color,
-          boxShadow: halo ? `0 0 ${size * 0.6}px ${color}` : 'none',
+          // Two stages: a tight opaque-ish ring hugging the dot, then a soft
+          // bloom beyond it. A single blur reads as a smudge; the ring gives
+          // the lamp an edge, so it looks lit rather than merely coloured.
+          boxShadow: halo
+            ? `0 0 0 ${Math.max(2, size * 0.32)}px color-mix(in srgb, ${color} 18%, transparent),
+               0 0 ${size * 0.8}px color-mix(in srgb, ${color} 55%, transparent)`
+            : 'none',
         }}
       />
       {pulse && (

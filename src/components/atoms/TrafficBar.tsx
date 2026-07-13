@@ -55,12 +55,11 @@ function TrafficBar_({ quota, variant = 'grid' }: { quota: TrafficQuota; variant
       )}
 
       <div
+        className="precision-inset"
         style={{
           position: 'relative',
           height,
-          background: 'var(--bg-inset)',
-          border: `0.5px solid ${quota.level === 'crit' ? color : 'var(--bg-3)'}`,
-          borderRadius: 3,
+          borderColor: quota.level === 'crit' ? color : undefined,
           overflow: 'hidden',
         }}
       >
@@ -73,6 +72,7 @@ function TrafficBar_({ quota, variant = 'grid' }: { quota: TrafficQuota; variant
             width: `${quota.ratio * 100}%`,
             minWidth: quota.used > 0 ? 2 : 0,
             background: color,
+            boxShadow: 'inset 0 1px 0 var(--edge-bright)',
           }}
         />
         <div

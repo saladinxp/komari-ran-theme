@@ -390,7 +390,21 @@ body {
   font-family: var(--font-sans);
   font-size: var(--t-body);
   color: var(--fg-0);
-  background: var(--bg-0);
+  /* Machined surface: a 34px scribed grid over an off-axis light source.
+     The gradient is built from the palette's own steps rather than fixed
+     colours, so every theme variant gets the same lighting for free — the
+     sheet reads as brushed metal catching light from the upper right, not as
+     a flat fill. */
+  background-color: var(--bg-0);
+  background-image:
+    linear-gradient(var(--grid-line) var(--hairline), transparent var(--hairline)),
+    linear-gradient(90deg, var(--grid-line) var(--hairline), transparent var(--hairline)),
+    radial-gradient(120% 92% at 80% 4%, var(--bg-3) 0%, var(--bg-0) 55%, var(--bg-inset) 100%);
+  background-size:
+    34px 34px,
+    34px 34px,
+    100% 100%;
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11';
@@ -437,21 +451,82 @@ body {
   text-shadow: var(--txt-engrave);
 }
 
-/* Precision card — outer chamfer + inner stroke */
+/* Precision card — outer chamfer + inner stroke.
+   Raised: lit from above, so the face carries a top-down gradient, the top
+   edge takes a highlight and the bottom edge a shadow (see --shadow-card). */
 .precision-card {
-  background: var(--bg-2);
+  background: linear-gradient(180deg, var(--bg-3), var(--bg-2));
   border: var(--hairline) solid var(--edge-mid);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   position: relative;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
 }
 
-/* Sunken display — for screens, charts, value readouts */
+/* Lift on hover — the plate rises off the sheet and its shadow lengthens,
+   which is what sells the depth. Opt in with .precision-card.liftable so
+   static panels don't wobble under the cursor. */
+.precision-card.liftable:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 var(--edge-bright) inset,
+    0 -1px 0 var(--edge-deep) inset,
+    0 10px 26px rgba(50, 40, 25, 0.16);
+  border-color: var(--edge-deep);
+}
+
+/* Status sweep — a hairline of the node's own status colour across the top
+   edge of a card, brightest at centre. Reads as light catching a machined
+   bevel, and encodes state without spending a single pixel on a badge. */
+.status-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Text pressed into the metal: a single light line beneath each glyph. On the
+   dark variants --txt-engrave inverts to a shadow, so this reads correctly in
+   both. Defined per theme; it was never actually applied anywhere until now. */
+.engraved {
+  text-shadow: var(--txt-engrave);
+}
+
+/* Sunken display — for screens, charts, value readouts.
+   Recessed: the same light source, so the shading inverts — shadow along the
+   TOP inner edge, highlight along the bottom (see --shadow-inset). Getting
+   this backwards is what makes a slot look painted on rather than milled. */
 .precision-inset {
   background: var(--bg-inset);
   border: var(--hairline) solid var(--edge-engrave);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-inset);
+}
+
+/* Selected nav item: the plate is pressed IN (inverted shading) and a raised
+   tab juts from its left edge — the physical vocabulary of a latched switch,
+   rather than a coloured background. */
+.nav-selected {
+  position: relative;
+  background: var(--bg-inset);
+  box-shadow: var(--shadow-inset);
+}
+
+.nav-selected::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
 }
 
 /* The double-stroke effect — outer bright, inner deep */

@@ -224,7 +224,7 @@ function NodeCardCompactV2_({
           handleClick()
         }
       }}
-      className="precision-card"
+      className="precision-card liftable"
       style={{
         padding: '11px 13px 12px',
         display: 'flex',
@@ -234,18 +234,22 @@ function NodeCardCompactV2_({
         opacity: isOnline ? 1 : 0.6,
         outline: selected ? '1px solid var(--accent)' : 'none',
         outlineOffset: selected ? -1 : 0,
-        transition: 'background 0.12s',
         position: 'relative',
-      }}
-      onMouseEnter={(e) => {
-        if (onClick)
-          (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-2)'
-      }}
-      onMouseLeave={(e) => {
-        if (onClick)
-          (e.currentTarget as HTMLDivElement).style.background = ''
+        overflow: 'hidden',
       }}
     >
+      {/* A hairline of the node's own status colour along the top bevel —
+          brightest at centre, fading out at both ends. Encodes state without
+          spending any layout on it. */}
+      <div
+        className="status-sweep"
+        style={{
+          background: `linear-gradient(90deg, transparent, var(--signal-${
+            status === 'good' ? 'good' : status === 'warn' ? 'warn' : 'bad'
+          }), transparent)`,
+        }}
+      />
+
       {/* Header */}
       <div
         style={{
@@ -267,7 +271,8 @@ function NodeCardCompactV2_({
             }}
           />
           <span
-            style={{
+            className="engraved"
+          style={{
               fontSize: contentFs(13),
               fontWeight: 600,
               color: 'var(--fg-0)',

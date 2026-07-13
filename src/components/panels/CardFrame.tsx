@@ -34,6 +34,7 @@ export function CardFrame({ title, code, action, children, inset = false, style 
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
           <span
+            className="engraved"
             style={{
               fontSize: 12,
               fontWeight: 600,

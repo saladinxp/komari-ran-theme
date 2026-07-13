@@ -41,6 +41,9 @@ import { aggregatePingByTarget, hasPingData } from '@/utils/ping'
 import { contentFs } from '@/utils/fontScale'
 import { filterWindowsByRetention, getRecordRetentionHours } from '@/utils/retention'
 import { useNodeHistory } from '@/hooks/useNodeHistory'
+import { useNodeTelemetry } from '@/hooks/useNodeTelemetry'
+import { NetworkQualityPanel } from '@/components/v2/NetworkQualityPanel'
+import { ConnectionsPanel } from '@/components/v2/ConnectionsPanel'
 import { useElementWidth } from '@/hooks/useElementWidth'
 import { hashFor } from '@/router/route'
 import { useMobileDrawer } from '@/hooks/useMediaQuery'
@@ -864,6 +867,9 @@ export function HubPage({
   const BUCKETS = windowSpec.buckets
 
   const history = useNodeHistory(uuid, HOURS)
+  // Latency distribution + connection/process counts — surfaced by the 1.2.6
+  // metric store, and previously invisible in the dashboard entirely.
+  const telemetry = useNodeTelemetry(uuid, windowSpec.hours)
   const node = useMemo(() => nodes.find((n) => n.uuid === uuid), [nodes, uuid])
   const record = node ? records[node.uuid] : undefined
   const online = record?.online === true
@@ -1629,6 +1635,31 @@ export function HubPage({
                   <TargetLatencyList targets={targetSummaries} />
                 </div>
               </CardFrame>
+
+              {/* Metric-store telemetry (Komari 1.2.6+). Both panels hide
+                  themselves on older backends and on nodes that never report
+                  the data, so nothing renders an empty shell. */}
+              {telemetry.supported && telemetry.quality.length > 0 && (
+                <NetworkQualityPanel
+                  stats={telemetry.quality}
+                  code="NET · 12"
+                  windowLabel={windowSpec.label}
+                />
+              )}
+
+              {telemetry.supported && telemetry.tcp.length > 0 && (
+                <ConnectionsPanel
+                  tcp={telemetry.tcp}
+                  udp={telemetry.udp}
+                  proc={telemetry.proc}
+                  tcpNow={telemetry.tcpNow}
+                  udpNow={telemetry.udpNow}
+                  procNow={telemetry.procNow}
+                  tcpMean={telemetry.tcpMean}
+                  code="CON · 13"
+                  windowLabel={windowSpec.label}
+                />
+              )}
             </div>
           )}
 
