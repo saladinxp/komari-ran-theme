@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
   fetchNodeLoadHistory,
-  fetchNodePingHistory,
   type LoadHistory,
   type PingHistory,
 } from '@/api/client'
+import { fetchNodePing } from '@/api/ping'
 
 interface NodeHistoryState {
   load: LoadHistory
@@ -34,7 +34,8 @@ export function useNodeHistory(uuid: string, hours = 1, refreshMs = 60_000): Nod
     const refresh = async () => {
       const [load, ping] = await Promise.all([
         fetchNodeLoadHistory(uuid, hours),
-        fetchNodePingHistory(uuid, hours),
+        // Metric store (1.2.6+) honours `hours`; legacy fallback inside.
+        fetchNodePing(uuid, hours),
       ])
       if (cancelled) return
       setState({ load, ping, loading: false })

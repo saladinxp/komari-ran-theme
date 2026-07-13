@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchNodeLoadHistory, fetchNodePingHistory, type LoadHistory, type PingHistory, type PingTask, type PingRecord } from '@/api/client'
+import { fetchNodeLoadHistory, type LoadHistory, type PingHistory, type PingTask, type PingRecord } from '@/api/client'
+import { fetchNodePing, EMPTY_PING_PLUS, type PingHistoryPlus } from '@/api/ping'
 import { bucketLoadHistory } from '@/utils/load'
 
 /**
@@ -20,6 +21,13 @@ import { bucketLoadHistory } from '@/utils/load'
 
 const CONCURRENCY = 6
 const BUCKETS = 60
+
+/**
+ * The live ping/loss meter always renders the last 30 minutes across BUCKETS
+ * slots, regardless of the chart range — it shows short-term fluctuation, not
+ * a smoothed long average. At a 30s probe interval that is one sample per slot.
+ */
+const PING_WINDOW_MINUTES = 30
 
 export interface PerNodeSeries {
   cpu: number[]
@@ -164,12 +172,19 @@ export function useGlobalHistory(
         uuids,
         async (
           uuid,
-        ): Promise<{ uuid: string; load: LoadHistory; ping: PingHistory }> => {
+        ): Promise<{ uuid: string; load: LoadHistory; ping: PingHistoryPlus }> => {
           const [load, ping] = await Promise.all([
             fetchNodeLoadHistory(uuid, hours).catch(() => ({ count: 0, records: [] }) as LoadHistory),
-            fetchNodePingHistory(uuid, hours).catch(
-              () => ({ count: 0, tasks: [], records: [] }) as PingHistory,
-            ),
+            // Metric store (1.2.6+) with automatic legacy fallback — the old
+            // REST endpoint only returns "today" after a migration, whatever
+            // window is requested.
+            // The live meter renders a 30-min window at 60 slots — one bar per
+            // 30s probe. The metric store's minimum aggregation bucket is 60s,
+            // so asking for the `hours` window would only ever half-fill it.
+            // Request the raw samples over exactly the window we draw.
+            fetchNodePing(uuid, hours, 500, {
+              rawWindowMinutes: PING_WINDOW_MINUTES,
+            }).catch(() => EMPTY_PING_PLUS),
           ])
           return { uuid, load, ping }
         },
@@ -225,18 +240,8 @@ export function useGlobalHistory(
       const pingByNode: Record<string, number[]> = {}
       const pingLossByNode: Record<string, number[]> = {}
       const pingStatsByNode: Record<string, PingNodeStats> = {}
-      const now = Date.now()
-      const start = now - windowMs
-      const bucketMs = windowMs / BUCKETS
-      // The ping/loss meter wants to show SHORT-TERM fluctuation, not a long
-      // smoothed average. With a 30s probe interval, a 30-min window over 60
-      // buckets gives ~1 sample/bucket — effectively per-probe resolution, so
-      // spikes and per-minute loss show up instead of being averaged away.
-      // Decoupled from windowMs so cpu/ram/traffic charts keep their range.
-      const PING_WINDOW_MS = 30 * 60 * 1000
-      const pingWindowMs = Math.min(windowMs, PING_WINDOW_MS)
-      const pingStart = now - pingWindowMs
-      const pingBucketMs = pingWindowMs / BUCKETS
+      // The ping/loss meter shows the most recent probes laid out in order —
+      // it is a strip of samples, not a time axis. See the render block below.
       for (const { uuid, ping } of histories) {
         for (const t of ping.tasks ?? []) {
           if (!tasksById.has(t.id)) tasksById.set(t.id, t)
@@ -248,24 +253,24 @@ export function useGlobalHistory(
         const primary = tasksSorted[0]
         const primaryId = primary?.id
 
-        // Build a sparkline from primary-task records only.
-        const sum = new Array(BUCKETS).fill(0)
-        const cnt = new Array(BUCKETS).fill(0)
+        // Charts consume the full aggregated range.
         for (const r of ping.records ?? []) {
           // Stamp client onto the merged record so the global view can split by node.
           allRecords.push({ ...r, client: r.client ?? uuid })
-          if (primaryId == null || r.task_id !== primaryId) continue
-          const tsec = new Date(r.time).getTime()
-          if (!Number.isFinite(tsec) || tsec < pingStart) continue
-          const idx = Math.min(BUCKETS - 1, Math.max(0, Math.floor((tsec - pingStart) / pingBucketMs)))
-          // Treat 0/negative ping (timeout/error sentinel) as no-data; otherwise
-          // it drags the mean toward 0 and the sparkline lies.
-          if (r.value > 0) {
-            sum[idx] += r.value
-            cnt[idx] += 1
-          }
         }
-        pingByNode[uuid] = sum.map((s, i) => (cnt[i] > 0 ? s / cnt[i] : 0))
+
+        // The live meter consumes the raw short-window samples instead. These
+        // are a uniform 30s grain — one per slot — whereas the charted series
+        // is bucketed at 60s or wider. Bucketing the two together yields a
+        // visibly uneven strip: dense where raw samples land, gappy elsewhere.
+        // Legacy installs return per-probe records anyway, so liveRecords
+        // falls back to records there.
+        const liveSource =
+          ping.liveRecords && ping.liveRecords.length > 0 ? ping.liveRecords : (ping.records ?? [])
+        const liveLoss =
+          ping.liveRecords && ping.liveRecords.length > 0
+            ? ping.liveLossByTask
+            : ping.lossByTask
 
         // Per-bucket packet loss %, reverse-derived from sample density:
         //   expected samples per bucket = bucketMs / (interval * 1000)
@@ -276,32 +281,37 @@ export function useGlobalHistory(
         // dropped probe. We mark them -1 so the meter renders them empty
         // instead of a false full-loss bar. Only GAPS *between* real samples
         // are genuine packet loss.
-        const intervalSec =
-          primary && typeof primary.interval === 'number' && primary.interval > 0
-            ? primary.interval
-            : 0
-        const expectedPerBucket = intervalSec > 0 ? pingBucketMs / (intervalSec * 1000) : 0
-        // Find the data span [firstIdx, lastIdx] where this node actually
-        // reported samples within the window.
-        let firstIdx = -1
-        let lastIdx = -1
-        for (let i = 0; i < BUCKETS; i++) {
-          if (cnt[i] > 0) {
-            if (firstIdx === -1) firstIdx = i
-            lastIdx = i
-          }
+        // The live meter is a strip of the most recent probes — not a time
+        // axis. Bucketing raw samples into a fixed 30-min window leaves the
+        // left third permanently blank, because the metric store caps raw
+        // queries at ~38 points (~19 min at a 30s interval) no matter how wide
+        // the window. So lay the samples out in order instead: every slot is a
+        // real probe, the strip is uniformly dense, and it adapts to whatever
+        // the server actually returns.
+        //
+        // Legacy installs return per-probe records too, so this path serves
+        // them identically.
+        const primaryLive = liveSource
+          .filter((r) => primaryId != null && r.task_id === primaryId)
+          .sort((a, b) => a.time.localeCompare(b.time))
+          .slice(-BUCKETS)
+
+        const lossAt = new Map<string, number | null>()
+        for (const lp of liveLoss?.[primaryId ?? -1] ?? []) lossAt.set(lp.time, lp.loss)
+
+        if (primaryLive.length > 0) {
+          pingByNode[uuid] = primaryLive.map((r) => (r.value > 0 ? r.value : 0))
+          pingLossByNode[uuid] = primaryLive.map((r) => {
+            const l = lossAt.get(r.time)
+            if (l != null) return l
+            // No loss datum for this probe: a non-positive latency is the
+            // failure sentinel, anything else succeeded.
+            return r.value > 0 ? 0 : 100
+          })
+        } else {
+          pingByNode[uuid] = []
+          pingLossByNode[uuid] = []
         }
-        pingLossByNode[uuid] = cnt.map((c, i) => {
-          // Outside the real data span → no data, not loss.
-          if (firstIdx === -1 || i < firstIdx || i > lastIdx) return -1
-          if (expectedPerBucket <= 0) {
-            // interval unknown → binary: any sample = up (0%), none = full loss
-            return c > 0 ? 0 : 100
-          }
-          const expected = Math.max(1, expectedPerBucket)
-          const ratio = c / expected
-          return Math.max(0, Math.min(100, (1 - ratio) * 100))
-        })
 
         // Headline number: trust backend's avg/loss for the primary task.
         // These are pre-computed per node per task across the queried window,
