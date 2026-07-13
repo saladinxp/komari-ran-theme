@@ -1,0 +1,58 @@
+# Touch this file and push to re-run packaging (workflow_dispatch is
+# unavailable from remote Claude sessions; any edit here re-triggers).
+# repackage-run: 4 (v2.1.2 — drop v2.1.1, perf: stop fetching undisplayed data)
+name: Package & upload release zip
+
+on:
+  push:
+    branches: [claude/v2-1-bug-repackage-cy424m]
+    paths: ['.github/workflows/release-package.yml']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to (re)upload the theme zip to'
+        required: true
+        default: 'v2.1.2'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || 'v2.1.2' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # v2.1.1 is superseded by v2.1.2 before anyone shipped on it — remove
+      # the release and its tag so the releases page shows one current line.
+      - name: Retire v2.1.1
+        run: gh release delete v2.1.1 -R "${GITHUB_REPOSITORY}" --cleanup-tag --yes || true
+
+      # dist/ is tracked in git and rebuilt on every commit, so the release
+      # zip is packaged straight from the committed files — no CI rebuild,
+      # no toolchain drift between local and CI output.
+      - name: Package theme zip
+        run: zip -rq "komari-ran-theme-${TAG}.zip" komari-theme.json preview.png dist/
+
+      - name: Create release if missing
+        run: |
+          gh release view "${TAG}" -R "${GITHUB_REPOSITORY}" >/dev/null 2>&1 && exit 0
+          gh release create "${TAG}" -R "${GITHUB_REPOSITORY}" \
+            --target main \
+            --title "${TAG} — Network Quality Panels + Overview Perf" \
+            --notes "## ${TAG}
+
+          > 合并 v2.1.1 / v2.1.2 两个迭代发布。
+
+          - feat: NET · 12 网络质量面板 — 每个 ping 目标的 p50 / p99 / 抖动(数据来自 Komari 1.2.6 metric store),完全丢失的目标以斜纹显示而非零宽条
+          - feat: CON · 13 连接数与进程面板 — TCP/UDP socket 和进程数,按节点自身窗口均值着色
+          - perf: Overview 打开不再卡死 ~5s — 不再拉取页面根本不展示的数据(逐节点 bulk history 等),主线程解析量大幅下降
+          - 打磨: 精密金工表面质感 pass;后端或节点缺数据时面板自动隐藏"
+
+      - name: Upload to release (replaces existing asset)
+        run: gh release upload "${TAG}" "komari-ran-theme-${TAG}.zip" --clobber
