@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { NodeStatus } from '@/types/komari'
 
 interface Props {
@@ -21,7 +22,7 @@ const COLOR_MAP: Record<string, string> = {
  * StatusDot — colored dot with optional halo glow and pulse ring.
  * Pulse uses transform+opacity (GPU-composited, ~zero CPU).
  */
-export function StatusDot({ status = 'good', size = 8, halo = true, pulse = false }: Props) {
+function StatusDot_({ status = 'good', size = 8, halo = true, pulse = false }: Props) {
   const color = COLOR_MAP[status] ?? COLOR_MAP.idle
   return (
     <span
@@ -64,3 +65,5 @@ export function StatusDot({ status = 'good', size = 8, halo = true, pulse = fals
     </span>
   )
 }
+
+export const StatusDot = memo(StatusDot_)

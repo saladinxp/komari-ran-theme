@@ -392,9 +392,12 @@ body {
   color: var(--fg-0);
   /* Machined surface: a 34px scribed grid over an off-axis light source.
      The gradient is built from the palette's own steps rather than fixed
-     colours, so every theme variant gets the same lighting for free — the
-     sheet reads as brushed metal catching light from the upper right, not as
-     a flat fill. */
+     colours, so every theme variant gets the same lighting for free.
+
+     Deliberately NOT background-attachment: fixed. Pinning the backdrop forces
+     the browser to repaint the entire viewport — radial gradient and all — on
+     every scroll frame, which is enough on its own to peg a CPU core. Scrolling
+     with the content costs nothing and looks the same. */
   background-color: var(--bg-0);
   background-image:
     linear-gradient(var(--grid-line) var(--hairline), transparent var(--hairline)),
@@ -404,7 +407,6 @@ body {
     34px 34px,
     34px 34px,
     100% 100%;
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'ss01', 'cv11';
@@ -460,10 +462,10 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   position: relative;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    border-color 0.16s ease;
+  /* transform only. Animating box-shadow re-rasterises the blur on every frame
+     — across a grid of cards that is a repaint storm for no visible gain, so
+     the shadow swaps instantly while the lift itself is what the eye follows. */
+  transition: transform 0.16s ease;
 }
 
 /* Lift on hover — the plate rises off the sheet and its shadow lengthens,

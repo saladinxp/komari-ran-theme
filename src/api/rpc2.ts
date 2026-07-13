@@ -127,6 +127,56 @@ export async function fetchPingQuality(uuid: string, hours = 24): Promise<PingQu
 }
 
 /**
+ * Whole-fleet load history in ONE request (Komari 1.2.6+).
+ *
+ * The legacy path fetches /api/records/load per node: 18 nodes over 24h is
+ * ~2.25MB across 18 requests taking ~5s, and the browser then buckets all of
+ * it by hand — which is why opening a dashboard stalled for seconds. The
+ * metric store answers the same question in a single call, pre-aggregated
+ * server-side: ~0.36MB in ~1.15s, already bucketed.
+ *
+ * Returns series keyed by metric, each carrying entity_id, so callers can
+ * pivot to per-node without a second round trip.
+ */
+export const FLEET_LOAD_METRICS = [
+  'cpu.usage',
+  'memory.used',
+  'memory.total',
+  'disk.used',
+  'disk.total',
+  'net.in.rate',
+  'net.out.rate',
+  'load.average',
+] as const
+
+export async function queryFleetLoad(
+  hours: number,
+  maxPoints: number,
+  metrics: readonly string[] = FLEET_LOAD_METRICS,
+): Promise<MetricSeries[]> {
+  return queryMetrics({
+    metricKeys: [...metrics],
+    // entity_ids omitted → every visible node.
+    hours,
+    maxPoints,
+  })
+}
+
+/**
+ * The subset a page that charts cpu/memory/network actually needs. Pulling
+ * disk and load as well adds ~40% to the payload and the parse time for series
+ * that are never read — and parsing blocks the main thread, which is what the
+ * user feels as a frozen page.
+ */
+export const FLEET_LOAD_METRICS_NO_DISK = [
+  'cpu.usage',
+  'memory.used',
+  'memory.total',
+  'net.in.rate',
+  'net.out.rate',
+] as const
+
+/**
  * Probe support once per page load. The legacy endpoints answer on every
  * version, so we cannot tell old from new by their success alone — we ask the
  * metric store directly and cache the verdict.

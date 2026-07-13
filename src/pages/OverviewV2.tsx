@@ -126,7 +126,10 @@ export function OverviewV2Page({
   const uuids = useMemo(() => nodes.map((n) => n.uuid), [nodes])
 
   // Always pull last-24h for the summary cards' sparklines.
-  const history24 = useGlobalHistory(uuids, 24, 60_000)
+  // This page charts cpu/ram/traffic and never reads a ping field, so ping is
+  // skipped outright — it was costing two requests per node whose responses
+  // were parsed and thrown away.
+  const history24 = useGlobalHistory(uuids, 24, 60_000, true, true, true, true)
 
   // Time window for the GLOBAL THROUGHPUT chart. 24h is the default; we
   // expose 1d / 3d / 7d / 30d to let the user zoom out for trend spotting.
@@ -143,6 +146,9 @@ export function OverviewV2Page({
     chartHours,
     60_000,
     chartHours !== 24, // gate: only fetch when actually zoomed out
+    true, // liveOnly
+    true, // skipPing — this page never plots ping
+    true, // skipDiskLoad — nor disk/load series
   )
   const historyChart = chartHours === 24 ? history24 : extendedHistory
 

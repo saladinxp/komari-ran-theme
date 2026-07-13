@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { fetchNodeLoadHistory, type LoadHistory, type PingHistory, type PingTask, type PingRecord } from '@/api/client'
 import { fetchNodePing, EMPTY_PING_PLUS, type PingHistoryPlus } from '@/api/ping'
 import { bucketLoadHistory } from '@/utils/load'
+import { pivotFleetLoad } from '@/utils/fleetLoad'
+import { queryFleetLoad, supportsMetricStore, FLEET_LOAD_METRICS_NO_DISK } from '@/api/rpc2'
 
 /**
  * useGlobalHistory — fetches per-node load history for ALL probes (in parallel,
@@ -119,6 +121,26 @@ export function useGlobalHistory(
    * state (e.g. only pull 30d data when the user actually zooms to 30d).
    */
   enabled = true,
+  /**
+   * List views draw only the live meter, never a ping chart. Setting this
+   * skips the aggregated ping range — one server-side aggregation and ~48KB
+   * per node that would otherwise be fetched, parsed and thrown away, all
+   * during the first paint.
+   */
+  liveOnly = false,
+  /**
+   * Skip ping entirely. Overview and Traffic chart cpu/ram/network and never
+   * touch a ping field — yet each was still firing two ping requests per node
+   * (raw samples + stats) and discarding every byte. At 18 nodes that is 36
+   * round trips and 36 responses to parse, on a page that cannot display them.
+   */
+  skipPing = false,
+  /**
+   * Skip the disk/load series in the bulk query. They are ~40% of the payload
+   * and the parse cost, and pages that only chart cpu/memory/network never
+   * read them.
+   */
+  skipDiskLoad = false,
 ): GlobalHistoryState {
   const [state, setState] = useState<GlobalHistoryState>({
     byNode: {},
@@ -163,28 +185,48 @@ export function useGlobalHistory(
     const refresh = async () => {
       const windowMs = hours * 60 * 60 * 1000
 
-      // Fan out load + ping per-node in parallel. Komari's global
-      // /api/records/ping?hours=N (no uuid) is unreliable on many deployments —
-      // it omits the `tasks` array, so the dashboard never gets target metadata.
-      // Per-node ping (uuid filter) always returns both tasks and records, so we
-      // fetch each node's ping and merge them.
+      // Load history: one bulk query for the whole fleet when the metric store
+      // is available. The legacy path fetches /api/records/load per node —
+      // 18 nodes over 24h is ~2.25MB across 18 requests taking ~5s, which the
+      // browser then buckets by hand. That fan-out is what stalled the first
+      // paint. The store answers the same question pre-aggregated in one call:
+      // ~0.36MB, ~1.15s, already bucketed.
+      const bulkLoad = (await supportsMetricStore())
+        ? await queryFleetLoad(
+            hours,
+            BUCKETS,
+            skipDiskLoad ? FLEET_LOAD_METRICS_NO_DISK : undefined,
+          )
+            .then((series) => pivotFleetLoad(series, BUCKETS))
+            .catch(() => undefined)
+        : undefined
+
+      // Ping still goes per-node: it is split per ping task, which the bulk
+      // shape doesn't carry. `liveOnly` already trims it to the raw window for
+      // views that draw no ping chart.
       const histories = await pmap(
         uuids,
         async (
           uuid,
         ): Promise<{ uuid: string; load: LoadHistory; ping: PingHistoryPlus }> => {
           const [load, ping] = await Promise.all([
-            fetchNodeLoadHistory(uuid, hours).catch(() => ({ count: 0, records: [] }) as LoadHistory),
-            // Metric store (1.2.6+) with automatic legacy fallback — the old
-            // REST endpoint only returns "today" after a migration, whatever
-            // window is requested.
+            // Skip the legacy per-node fetch entirely when the bulk query
+            // already covered this node.
+            bulkLoad?.[uuid]
+              ? Promise.resolve({ count: 0, records: [] } as LoadHistory)
+              : fetchNodeLoadHistory(uuid, hours).catch(
+                  () => ({ count: 0, records: [] }) as LoadHistory,
+                ),
             // The live meter renders a 30-min window at 60 slots — one bar per
             // 30s probe. The metric store's minimum aggregation bucket is 60s,
             // so asking for the `hours` window would only ever half-fill it.
             // Request the raw samples over exactly the window we draw.
-            fetchNodePing(uuid, hours, 500, {
-              rawWindowMinutes: PING_WINDOW_MINUTES,
-            }).catch(() => EMPTY_PING_PLUS),
+            skipPing
+              ? Promise.resolve(EMPTY_PING_PLUS)
+              : fetchNodePing(uuid, hours, 500, {
+                  rawWindowMinutes: PING_WINDOW_MINUTES,
+                  liveOnly,
+                }).catch(() => EMPTY_PING_PLUS),
           ])
           return { uuid, load, ping }
         },
@@ -202,7 +244,9 @@ export function useGlobalHistory(
       const ramCount = new Array(BUCKETS).fill(0)
 
       for (const { uuid, load } of histories) {
-        const series = bucketLoadHistory(load, BUCKETS, windowMs)
+        // Server-bucketed when the bulk query covered this node; hand-bucketed
+        // from raw records only on the legacy path.
+        const series = bulkLoad?.[uuid] ?? bucketLoadHistory(load, BUCKETS, windowMs)
         byNode[uuid] = series
 
         for (let i = 0; i < BUCKETS; i++) {
@@ -344,7 +388,7 @@ export function useGlobalHistory(
       clearInterval(t)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, refreshMs, enabled])
+  }, [key, hours, refreshMs, enabled, liveOnly, skipPing, skipDiskLoad])
 
   return state
 }

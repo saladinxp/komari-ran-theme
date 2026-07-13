@@ -87,11 +87,18 @@ export async function fetchNodePing(
      * only ever fill half its slots.
      */
     rawWindowMinutes?: number
+    /**
+     * Skip the aggregated range entirely. The node list draws only the live
+     * meter; the charted series is a detail-page concern, and pulling it for
+     * every card costs ~48KB and a server-side time-series aggregation each,
+     * which is precisely what makes the first paint stall.
+     */
+    liveOnly?: boolean
   },
 ): Promise<PingHistoryPlus> {
   if (await supportsMetricStore()) {
     try {
-      return await fetchFromMetricStore(uuid, hours, maxPoints, opts?.rawWindowMinutes)
+      return await fetchFromMetricStore(uuid, hours, maxPoints, opts?.rawWindowMinutes, opts?.liveOnly)
     } catch {
       // fall through to legacy
     }
@@ -122,18 +129,23 @@ async function fetchFromMetricStore(
   hours: number,
   maxPoints: number,
   rawWindowMinutes?: number,
+  liveOnly?: boolean,
 ): Promise<PingHistoryPlus> {
   const wantsRaw = rawWindowMinutes != null && rawWindowMinutes > 0
 
   const [series, liveSeries, taskDefs, stats] = await Promise.all([
-    // Full requested range, server-aggregated. This is what the charts plot;
-    // it must span `hours`, so it never carries a `start` override.
-    queryMetrics({
-      metricKeys: ['ping.latency_ms', 'ping.loss'],
-      entityId: uuid,
-      hours,
-      maxPoints,
-    }),
+    // Full requested range, server-aggregated — what the charts plot. Skipped
+    // for list views, which draw no chart: each of these is a server-side
+    // aggregation returning ~48KB, and fanning one out per card is precisely
+    // what stalls the first paint.
+    liveOnly
+      ? Promise.resolve([] as MetricSeries[])
+      : queryMetrics({
+          metricKeys: ['ping.latency_ms', 'ping.loss'],
+          entityId: uuid,
+          hours,
+          maxPoints,
+        }),
     // The live meter needs un-aggregated 30s samples, but only over its own
     // short window. That is a *separate* query — folding it into the one above
     // (by passing `start`) would truncate the charts to 30 minutes, which is
@@ -162,7 +174,9 @@ async function fetchFromMetricStore(
     if (Number.isFinite(id)) statsByTask.set(id, st)
   }
 
-  if (series.length === 0) throw new Error('metric store returned no ping series')
+  if (series.length === 0 && liveSeries.length === 0) {
+    throw new Error('metric store returned no ping series')
+  }
 
   const nameById = new Map(taskDefs.map((t) => [t.id, t]))
   const seenTasks = new Set<number>()

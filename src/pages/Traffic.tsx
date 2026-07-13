@@ -137,6 +137,10 @@ export function TrafficPage({
   const ownHistory = useGlobalHistory(
     activeKey === '1h' ? [] : nodes.map((n) => n.uuid),
     win.hours,
+    60_000,
+    true,
+    true, // liveOnly
+    true, // skipPing — traffic charts never plot ping
   )
   const effectiveHistory: GlobalHistoryState | undefined =
     activeKey === '1h' ? history : ownHistory

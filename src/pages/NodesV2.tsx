@@ -109,7 +109,10 @@ export function NodesV2Page({
 
   // 1h history for sparklines
   const uuids = useMemo(() => nodes.map((n) => n.uuid), [nodes])
-  const history1h = useGlobalHistory(uuids, 1, 60_000)
+  // liveOnly: the card grid renders no ping chart, so the aggregated range
+  // would be fetched and discarded — 48KB and a server aggregation per node,
+  // all landing during the first paint.
+  const history1h = useGlobalHistory(uuids, 1, 60_000, true, true)
 
   // Precompute per-node combined net throughput sparkline arrays, keyed by
   // uuid. Memoized on history1h.byNode (refreshes ~60s) so each array keeps a
