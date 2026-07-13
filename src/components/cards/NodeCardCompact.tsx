@@ -2,9 +2,11 @@ import { memo } from 'react'
 import { Etch } from '@/components/atoms/Etch'
 import { StatusDot } from '@/components/atoms/StatusDot'
 import { Sparkline } from '@/components/charts/Sparkline'
+import { TrafficBar } from '@/components/atoms/TrafficBar'
 import type { KomariNode, KomariRecord, NodeStatus } from '@/types/komari'
 import { formatBps, formatBytes, formatPercent, formatUptimeShort, parseLabels, daysUntil } from '@/utils/format'
 import { contentFs } from '@/utils/fontScale'
+import { computeTrafficQuota } from '@/utils/traffic'
 
 interface Props {
   node: KomariNode
@@ -93,6 +95,7 @@ function MetricCell({
 
 function NodeCardCompact_({ node, record, netSpark = [], pingSpark = [], pingLoss = [], pingStats }: Props) {
   const status = deriveStatus(record)
+  const quota = computeTrafficQuota(node, record)
   const offline = status === 'bad'
   const statusColor = COLOR_BY_STATUS[status]
   const labels = parseLabels(node.tags)
@@ -273,6 +276,13 @@ function NodeCardCompact_({ node, record, netSpark = [], pingSpark = [], pingLos
           <span className="mono tnum" style={{ color: 'var(--fg-0)' }}>{formatBytes(record?.network_total_down)}</span>
         </div>
       </div>
+
+      {/* traffic quota — only when the admin set a threshold (0 = unlimited) */}
+      {quota && (
+        <div style={{ paddingTop: 9, borderTop: '0.5px dashed var(--bg-3)' }}>
+          <TrafficBar quota={quota} variant="grid" />
+        </div>
+      )}
 
       {/* ping + loss */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

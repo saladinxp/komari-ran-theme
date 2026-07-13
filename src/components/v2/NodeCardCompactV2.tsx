@@ -24,6 +24,7 @@ import { memo } from 'react'
 import type { KomariNode, KomariRecord, NodeStatus } from '@/types/komari'
 import { Etch } from '@/components/atoms/Etch'
 import { Sparkline } from '@/components/charts/Sparkline'
+import { TrafficBar } from '@/components/atoms/TrafficBar'
 import {
   daysUntil,
   formatBps,
@@ -32,6 +33,7 @@ import {
   resolveRamPercent,
 } from '@/utils/format'
 import { contentFs } from '@/utils/fontScale'
+import { computeTrafficQuota } from '@/utils/traffic'
 
 interface Props {
   node: KomariNode
@@ -191,6 +193,7 @@ function NodeCardCompactV2_({
       : undefined
 
   const labels = parseLabels(node.tags)
+  const quota = computeTrafficQuota(node, record)
   const expiry = fmtExpiry(node.expired_at)
 
   // Subtitle: OS · cores · RAM · disk (best effort)
@@ -402,6 +405,9 @@ function NodeCardCompactV2_({
           </div>
         )}
       </div>
+
+      {/* traffic quota — only when the admin set a threshold (0 = unlimited) */}
+      {quota && <TrafficBar quota={quota} variant="compact" />}
 
       {/* Uptime / Expire row */}
       <div

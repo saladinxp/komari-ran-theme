@@ -36,6 +36,18 @@ export interface KomariNode {
   billing_cycle?: number | string
   /** Currency symbol — e.g. "$", "¥", "€". From Komari node settings. */
   currency?: string
+  /**
+   * Traffic threshold in **bytes** (Komari 1.2.6+, admin "流量阈值" field).
+   * 0 (or absent) means unlimited — Komari's own UI disables the traffic
+   * progress bar in that case, and so do we.
+   */
+  traffic_limit?: number
+  /**
+   * How usage is measured against `traffic_limit`:
+   *   'max' (取最大) — compare max(up, down) against the limit
+   *   'sum' (求和)   — compare up + down against the limit
+   */
+  traffic_limit_type?: 'max' | 'sum' | string
   /** VPS / hosting provider name — Hetzner, Vultr, OVH, etc. May not be in Komari yet. */
   provider?: string
   weight?: number

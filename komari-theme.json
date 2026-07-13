@@ -2,7 +2,7 @@
   "name": "Ran · 岚",
   "short": "ran",
   "description": "精密金工质感 · 双 hairline 倒角 · 凹陷读数窗 · 蚀刻铭牌字 · 多主题(墨石深 / 雾色浅 / 烬枣红 / 樱粉浅 / 薰衣草浅)。Inspired by precision-machined hi-fi gear.",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "author": "Miuler",
   "url": "https://github.com/saladinxp/komari-ran-theme",
   "preview": "preview.png",
@@ -74,7 +74,7 @@
         "key": "version_tag",
         "name": "[ SYS.VER ] 版本号",
         "type": "string",
-        "default": "v2.0.3",
+        "default": "v2.1.0",
         "help": "页脚显示的版本标识"
       },
       {
